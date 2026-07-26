@@ -1,0 +1,334 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════ */
+@layer base {
+  :root {
+    /* Backgrounds */
+    --bg:               #0a0e1a;
+    --bg-elevated:      #0f1629;
+    --surface:          #131929;
+    --surface-2:        #1a2236;
+    --surface-3:        #212d42;
+
+    /* Borders */
+    --border:           #2a3654;
+    --border-subtle:    #1e2a40;
+
+    /* Text */
+    --text-1:           #f0f4ff;
+    --text-2:           #8899b4;
+    --text-3:           #4a5a78;
+
+    /* Brand */
+    --accent:           #3b82f6;
+    --accent-bright:    #60a5fa;
+    --accent-glow:      rgba(59, 130, 246, 0.18);
+    --accent-border:    rgba(59, 130, 246, 0.35);
+
+    /* Status */
+    --success:          #34d399;
+    --success-glow:     rgba(52, 211, 153, 0.12);
+    --warning:          #fbbf24;
+    --warning-glow:     rgba(251, 191, 36, 0.12);
+    --danger:           #f87171;
+    --danger-glow:      rgba(248, 113, 113, 0.12);
+
+    /* Shadows */
+    --shadow-card:      0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
+    --shadow-elevated:  0 2px 8px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.3);
+    --shadow-accent:    0 0 0 1px var(--accent-border), 0 4px 24px var(--accent-glow);
+  }
+
+  html.light {
+    --bg:               #f0f4f8;
+    --bg-elevated:      #e8eef5;
+    --surface:          #ffffff;
+    --surface-2:        #f8fafc;
+    --surface-3:        #f1f5f9;
+
+    --border:           #cbd5e1;
+    --border-subtle:    #e2e8f0;
+
+    --text-1:           #0f172a;
+    --text-2:           #475569;
+    --text-3:           #94a3b8;
+
+    --accent:           #2563eb;
+    --accent-bright:    #3b82f6;
+    --accent-glow:      rgba(37, 99, 235, 0.1);
+    --accent-border:    rgba(37, 99, 235, 0.3);
+
+    --success:          #059669;
+    --success-glow:     rgba(5, 150, 105, 0.08);
+    --warning:          #d97706;
+    --warning-glow:     rgba(217, 119, 6, 0.08);
+    --danger:           #dc2626;
+    --danger-glow:      rgba(220, 38, 38, 0.08);
+
+    --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-elevated:  0 2px 8px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.06);
+    --shadow-accent:    0 0 0 1px var(--accent-border), 0 4px 16px var(--accent-glow);
+  }
+
+  html, body {
+    background-color: var(--bg);
+    color: var(--text-1);
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% -5%,  rgba(59,130,246,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 60%  40% at 90% 80%,  rgba(139,92,246,0.07) 0%, transparent 50%);
+  }
+
+  html.light body {
+    background-image:
+      radial-gradient(ellipse 100% 50% at 50% -10%, rgba(37,99,235,0.06) 0%, transparent 55%),
+      radial-gradient(ellipse 50%  40% at 90% 90%,  rgba(99,102,241,0.04) 0%, transparent 50%);
+  }
+
+  #root { position: relative; z-index: 1; }
+
+  /* ═══════════════════════════════════════════════════════
+     SCROLLBAR
+  ═══════════════════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+  /* ═══════════════════════════════════════════════════════
+     FORM ELEMENTS
+  ═══════════════════════════════════════════════════════ */
+  input[type="number"],
+  input[type="text"],
+  input[type="date"],
+  select {
+    background-color: var(--bg);
+    color: var(--text-1);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="number"]:focus,
+  input[type="text"]:focus,
+  input[type="date"]:focus,
+  select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238899b4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    cursor: pointer;
+  }
+
+  select option {
+    background-color: var(--surface-2);
+    color: var(--text-1);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* ═══════════════════════════════════════════════════════
+     RANGE SLIDER
+  ═══════════════════════════════════════════════════════ */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    height: 4px;
+    border-radius: 9999px;
+    outline: none;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    width: 100%;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 0 0 2px var(--accent-border);
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    cursor: pointer;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     ANIMATIONS
+  ═══════════════════════════════════════════════════════ */
+  @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .spin-slow { animation: spinSlow 2s linear infinite; }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 0.8; }
+  }
+  .skeleton { 
+    background: var(--surface-2); 
+    border: 1px solid var(--border);
+    border-radius: 10px; 
+    animation: shimmer 1.8s ease-in-out infinite; 
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     FOCUS
+  ═══════════════════════════════════════════════════════ */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CARD COMPONENTS (outside @layer to prevent Tailwind override)
+═══════════════════════════════════════════════════════ */
+.ip-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card) !important;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.ip-card:hover {
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.ip-card-inner {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+═══════════════════════════════════════════════════════ */
+.ip-heading {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+}
+
+.ip-subheading {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+
+.ip-body {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.ip-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.ip-mono-lg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATUS PILLS
+═══════════════════════════════════════════════════════ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 9999px;
+  padding: 3px 9px;
+  border: 1px solid;
+}
+.pill-success { color: var(--success); background: var(--success-glow); border-color: rgba(52,211,153,0.3); }
+.pill-warning { color: var(--warning); background: var(--warning-glow); border-color: rgba(251,191,36,0.3); }
+.pill-danger  { color: var(--danger);  background: var(--danger-glow);  border-color: rgba(248,113,113,0.3); }
+.pill-neutral { color: var(--text-2);  background: var(--surface-3);    border-color: var(--border); }
+
+/* ═══════════════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════════════ */
+.ip-table { width: 100%; border-collapse: collapse; font-family: 'Outfit', sans-serif; font-size: 13px; }
+.ip-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.ip-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-2);
+  vertical-align: middle;
+}
+.ip-table tbody tr:last-child td { border-bottom: none; }
+.ip-table tbody tr:hover { background: var(--surface-2); }
+
+/* ═══════════════════════════════════════════════════════
+   ACCENT TOP STRIPE (applied to cards)
+═══════════════════════════════════════════════════════ */
+.accent-stripe::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 40%, transparent 100%);
+  border-radius: 12px 12px 0 0;
+}
