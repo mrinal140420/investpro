@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://backend-smoky-three-11.vercel.app/api/$1"
+    }
+  ]
+}
