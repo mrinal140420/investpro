@@ -31,6 +31,7 @@ frontend/build/
 *.swp
 *.swo
 *~
+.kiro/
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -45,3 +46,8 @@ logs/
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 docker-compose.override.yml
+
+# ── Temporary & Local Files ──────────────────────────────────────────────────
+test_results.txt
+pass.txt
+

@@ -162,17 +162,17 @@ export default function InteractiveControlPanel({ params, setParams, onRecalcula
         </FieldInput>
 
         {/* Risk Strategy */}
-        <FieldInput id="risk-strategy" label="Risk strategy">
+        <FieldInput id="risk-strategy" label="Multi-Asset Strategy">
           <select id="risk-strategy" value={params.risk_mode}
             onChange={e => setParams(prev => ({ ...prev, risk_mode: e.target.value }))}>
-            <option value="aggressive">Aggressive Barbell</option>
-            <option value="ultra_aggressive">Ultra-Aggressive</option>
-            <option value="balanced">Balanced</option>
+            <option value="global_multi_asset">🌐 Global Multi-Asset (INDmoney Style)</option>
+            <option value="ultra_aggressive">🚀 High-Alpha Tech & Small Cap</option>
+            <option value="balanced">🛡️ All-Weather Balanced (Gold & S&P 500)</option>
           </select>
           <p style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '5px', fontFamily: "'Outfit', sans-serif" }}>
-            {params.risk_mode === 'aggressive' && 'Small Cap + Momentum + Index'}
-            {params.risk_mode === 'ultra_aggressive' && '70% Growth Assets + Silver'}
-            {params.risk_mode === 'balanced' && 'Index + Liquid Fund + Gold'}
+            {params.risk_mode === 'global_multi_asset' && 'Small Cap (25%) + S&P 500 (20%) + Momentum (20%) + Nifty 50 + Silver'}
+            {params.risk_mode === 'ultra_aggressive' && 'Small Cap (35%) + S&P 500 (25%) + Momentum (20%) + Next 50 + Silver'}
+            {params.risk_mode === 'balanced' && 'Nifty 50 (25%) + S&P 500 (20%) + Gold FoF (20%) + Liquid (20%) + Small Cap'}
           </p>
         </FieldInput>
 

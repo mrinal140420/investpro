@@ -14,9 +14,10 @@ const sectionHeading = {
 };
 
 const STRATEGY_LABELS = {
-  aggressive:       'Aggressive Barbell',
-  ultra_aggressive: 'Ultra-Aggressive',
-  balanced:         'Balanced',
+  global_multi_asset: '🌐 Global Multi-Asset (INDmoney Style)',
+  aggressive:         '🌐 Global Multi-Asset Barbell',
+  ultra_aggressive:   '🚀 High-Alpha Tech & Small Cap',
+  balanced:           '🛡️ All-Weather Balanced',
 };
 
 function getRiskStyle(risk = '') {

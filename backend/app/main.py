@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Body
+from fastapi import FastAPI, HTTPException, Depends, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import date
 from typing import Dict, Any, List, Optional
@@ -9,12 +9,17 @@ from app.services.ghost_trajectory import GhostTrajectoryEngine, TrajectoryReque
 from app.services.circuit_breaker import CasinoExitCircuitBreaker
 from app.services.bloat_scanner import AUMBloatScanner
 from app.services.financial_advisor import AIAdvisorEngine
+from app.services.goal_slicing import GoalSlicingEngine
+from app.services.tax_harvesting import TaxAlphaEngine
+from app.services.milestone_tracker import FinancialFreedomEngine
+from app.services.investing_pro import InvestingProEngine
+from app.services.hinglish_advisor import HinglishAdvisorService
 from app.utils.telegram import TelegramNotifier
 
 app = FastAPI(
     title=settings.APP_NAME,
-    version="3.1.0",
-    description="Wealth Command Center Decision Support System API"
+    version="3.4.0",
+    description="Wealth Command Center & Hinglish AI Financial Advisor API"
 )
 
 app.add_middleware(
@@ -29,10 +34,15 @@ ghost_engine = GhostTrajectoryEngine()
 circuit_breaker = CasinoExitCircuitBreaker()
 bloat_scanner = AUMBloatScanner()
 advisor_engine = AIAdvisorEngine()
+goal_slicing_engine = GoalSlicingEngine()
+tax_alpha_engine = TaxAlphaEngine()
+freedom_engine = FinancialFreedomEngine()
+investing_pro_engine = InvestingProEngine()
+hinglish_advisor = HinglishAdvisorService()
 
 class UserProfileUpdatePayload(BaseModel):
     dob: Optional[str] = "2005-04-14"
-    current_ctc_lpa: Optional[float] = 2.88
+    current_ctc_lpa: Optional[float] = 12.0
     monthly_investable_sip: Optional[float] = 25000.0
     lump_sum_amount: Optional[float] = 0.0
     annual_step_up_pct: Optional[float] = 0.10
@@ -45,14 +55,58 @@ class UserProfileUpdatePayload(BaseModel):
     savings_rate: Optional[float] = 0.30
     risk_mode: Optional[str] = "aggressive"
 
+class GoalSlicingPayload(BaseModel):
+    goal_name: str = "MacBook Pro / Bike Fund"
+    target_amount: float = 150000.0
+    target_date: str = "2027-06-30"
+    current_saved: Optional[float] = 0.0
+    step_up_pct: Optional[float] = 0.10
+    step_up_frequency: Optional[str] = "ANNUAL"
+    estimated_loan_apr_pct: Optional[float] = 14.0
+
+class TaxHarvestScanPayload(BaseModel):
+    portfolio_value: Optional[float] = 500000.0
+    unrealized_gains_override: Optional[float] = 0.0
+
+class MilestoneFreedomPayload(BaseModel):
+    current_corpus: Optional[float] = 250000.0
+    monthly_salary: Optional[float] = 85000.0
+    annual_ctc_lpa: Optional[float] = 12.0
+
+class ChatAdvisorPayload(BaseModel):
+    message: str = "Bhai S&P 500 FoF kyu zaroori hai?"
+    portfolio_context: Optional[Dict[str, Any]] = None
+    conversation_history: Optional[List[Dict[str, str]]] = None
+    custom_gemini_key: Optional[str] = None
+
 @app.get("/")
 async def health_check():
     return {
         "status": "online",
-        "system": "InvestPro Wealth Command Center DSS",
-        "version": "3.1.0"
+        "system": "InvestPro Wealth Command Center & InvestingPro DSS",
+        "version": "3.4.0"
     }
 
+# ── InvestingPro Institutional Endpoints ──
+@app.get("/api/v1/pro/propicks")
+@app.post("/api/v1/pro/propicks")
+async def get_propicks_strategies():
+    strategies = investing_pro_engine.get_propicks_strategies()
+    return {"strategies": strategies}
+
+@app.get("/api/v1/pro/fair-value")
+@app.post("/api/v1/pro/fair-value")
+async def get_fair_value_analysis(symbol: str = Query("NIFTY_50")):
+    analysis = investing_pro_engine.get_fair_value_analysis(symbol)
+    return analysis
+
+@app.get("/api/v1/pro/whale-portfolios")
+@app.post("/api/v1/pro/whale-portfolios")
+async def get_whale_portfolios():
+    whales = investing_pro_engine.get_institutional_whale_portfolios()
+    return {"whales": whales}
+
+# ── User Trajectory Analysis Endpoint ──
 @app.post("/api/v1/user/trajectory-analysis")
 @app.get("/api/v1/user/trajectory-analysis")
 async def analyze_trajectory(payload: Optional[UserProfileUpdatePayload] = None):
@@ -60,12 +114,12 @@ async def analyze_trajectory(payload: Optional[UserProfileUpdatePayload] = None)
         payload = UserProfileUpdatePayload()
 
     # Fail-safe sanitization for every field
-    raw_ctc = payload.current_ctc_lpa if payload.current_ctc_lpa is not None else 2.88
+    raw_ctc = payload.current_ctc_lpa if payload.current_ctc_lpa is not None else 12.0
     if raw_ctc > 500.0:
         raw_ctc = (raw_ctc * 12.0) / 100000.0
     ctc = max(0.01, raw_ctc)
 
-    sip = max(10.0, payload.monthly_investable_sip if payload.monthly_investable_sip is not None else 25000.0)
+    sip = max(0.0, payload.monthly_investable_sip if payload.monthly_investable_sip is not None else 25000.0)
     lump = max(0.0, payload.lump_sum_amount if payload.lump_sum_amount is not None else 0.0)
     near_target = max(100.0, payload.near_target_amount if payload.near_target_amount is not None else 5000000.0)
     annual_step_up = max(0.0, payload.annual_step_up_pct if payload.annual_step_up_pct is not None else 0.10)
@@ -117,6 +171,13 @@ async def analyze_trajectory(payload: Optional[UserProfileUpdatePayload] = None)
         risk_mode=risk
     )
 
+    # Calculate Milestones & Freedom metrics
+    freedom_metrics = freedom_engine.calculate_milestones(
+        current_corpus=max(0.0, payload.current_portfolio or 0.0) + lump,
+        monthly_salary=(ctc * 100000.0 / 12) * 0.85,
+        annual_ctc_lpa=ctc
+    )
+
     return {
         "user_profile": {
             "dob": dob_str,
@@ -142,13 +203,14 @@ async def analyze_trajectory(payload: Optional[UserProfileUpdatePayload] = None)
                 "formatted_corpus": m.formatted_corpus
             } for m in career_roadmap
         ],
-        "financial_advisor": advisor_recommendations
+        "financial_advisor": advisor_recommendations,
+        "freedom_metrics": freedom_metrics
     }
 
 @app.post("/api/v1/funds/barbell-universe")
 @app.get("/api/v1/funds/barbell-universe")
 async def get_barbell_universe(monthly_sip: float = 25000.0, lump_sum: float = 0.0, risk_mode: str = "aggressive"):
-    sip = max(10.0, monthly_sip)
+    sip = max(0.0, monthly_sip)
     lump = max(0.0, lump_sum)
     advisor_data = advisor_engine.generate_recommendations(
         monthly_sip=sip,
@@ -156,6 +218,40 @@ async def get_barbell_universe(monthly_sip: float = 25000.0, lump_sum: float = 0
         risk_mode=risk_mode
     )
     return advisor_data
+
+@app.post("/api/v1/goals/reverse-emi")
+async def calculate_goal_reverse_emi(payload: GoalSlicingPayload):
+    plan = goal_slicing_engine.calculate_goal_plan(
+        goal_name=payload.goal_name,
+        target_amount=max(100.0, payload.target_amount),
+        target_date_str=payload.target_date,
+        current_saved=max(0.0, payload.current_saved or 0.0),
+        step_up_pct=max(0.0, payload.step_up_pct if payload.step_up_pct is not None else 0.10),
+        step_up_frequency=payload.step_up_frequency or "ANNUAL",
+        estimated_loan_apr_pct=max(1.0, payload.estimated_loan_apr_pct or 14.0)
+    )
+    return plan
+
+@app.post("/api/v1/tax/harvesting-scan")
+async def scan_tax_harvesting(payload: Optional[TaxHarvestScanPayload] = None):
+    if payload is None:
+        payload = TaxHarvestScanPayload()
+    result = tax_alpha_engine.scan_tax_harvesting(
+        portfolio_value=max(0.0, payload.portfolio_value or 0.0),
+        unrealized_gains_override=max(0.0, payload.unrealized_gains_override or 0.0)
+    )
+    return result
+
+@app.post("/api/v1/milestones/freedom-tracker")
+async def track_milestones(payload: Optional[MilestoneFreedomPayload] = None):
+    if payload is None:
+        payload = MilestoneFreedomPayload()
+    result = freedom_engine.calculate_milestones(
+        current_corpus=max(0.0, payload.current_corpus or 0.0),
+        monthly_salary=max(1000.0, payload.monthly_salary or 85000.0),
+        annual_ctc_lpa=max(0.1, payload.annual_ctc_lpa or 12.0)
+    )
+    return result
 
 @app.post("/api/v1/directives/test-telegram")
 async def test_telegram_directive(scheme_code: str = "145206", amount: float = 100.0):
@@ -173,3 +269,22 @@ async def test_telegram_directive(scheme_code: str = "145206", amount: float = 1
         "status": "sent" if success else "failed",
         "groww_url": "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth"
     }
+
+@app.post("/api/v1/chat/hinglish-advisor")
+async def chat_hinglish_advisor(payload: ChatAdvisorPayload):
+    ctx = payload.portfolio_context or {
+        "monthly_sip": 25000.0,
+        "lump_sum": 50000.0,
+        "target_amount": 5000000.0,
+        "target_date": "2028-12-31",
+        "ctc_lpa": 12.0,
+        "risk_mode": "global_multi_asset"
+    }
+
+    result = await hinglish_advisor.generate_response(
+        user_message=payload.message,
+        portfolio_context=ctx,
+        conversation_history=payload.conversation_history or [],
+        custom_api_key=payload.custom_gemini_key
+    )
+    return result

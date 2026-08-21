@@ -138,14 +138,24 @@ export default function WealthProjectionCard({ trajectoryData }) {
           fontSize: '12px',
           fontWeight: '500',
           fontFamily: "'Outfit', sans-serif",
-          backgroundColor: isOnTrack ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)',
-          border: `1px solid ${isOnTrack ? 'rgba(22,163,74,0.3)' : 'rgba(217,119,6,0.3)'}`,
-          color: isOnTrack ? 'var(--success)' : 'var(--warning)',
+          backgroundColor: isOnTrack 
+            ? 'rgba(22,163,74,0.1)' 
+            : shortTerm.verdict === 'UNREALISTIC_TIMELINE' 
+            ? 'rgba(220,38,38,0.1)' 
+            : 'rgba(217,119,6,0.1)',
+          border: `1px solid ${
+            isOnTrack 
+              ? 'rgba(22,163,74,0.3)' 
+              : shortTerm.verdict === 'UNREALISTIC_TIMELINE' 
+              ? 'rgba(220,38,38,0.3)' 
+              : 'rgba(217,119,6,0.3)'
+          }`,
+          color: isOnTrack ? 'var(--success)' : shortTerm.verdict === 'UNREALISTIC_TIMELINE' ? 'var(--danger)' : 'var(--warning)',
         }}>
           {isOnTrack
             ? <CheckCircle2 style={{ width: '13px', height: '13px' }} />
             : <AlertTriangle style={{ width: '13px', height: '13px' }} />}
-          {isOnTrack ? 'On Track' : 'Needs Adjustment'}
+          {isOnTrack ? 'On Track' : shortTerm.verdict === 'UNREALISTIC_TIMELINE' ? 'Reality Check Required' : 'Needs Adjustment'}
         </span>
       </div>
 
@@ -154,15 +164,76 @@ export default function WealthProjectionCard({ trajectoryData }) {
         borderRadius: '8px',
         padding: '16px',
         marginBottom: '24px',
-        backgroundColor: isOnTrack ? 'rgba(22,163,74,0.08)' : 'rgba(217,119,6,0.08)',
-        border: `1px solid ${isOnTrack ? 'rgba(22,163,74,0.25)' : 'rgba(217,119,6,0.25)'}`,
+        backgroundColor: isOnTrack 
+          ? 'rgba(22,163,74,0.08)' 
+          : shortTerm.verdict === 'UNREALISTIC_TIMELINE' 
+          ? 'rgba(220,38,38,0.08)' 
+          : 'rgba(217,119,6,0.08)',
+        border: `1px solid ${
+          isOnTrack 
+            ? 'rgba(22,163,74,0.25)' 
+            : shortTerm.verdict === 'UNREALISTIC_TIMELINE' 
+            ? 'rgba(220,38,38,0.3)' 
+            : 'rgba(217,119,6,0.25)'
+        }`,
       }}>
         <p style={{ fontSize: '13px', color: 'var(--text-2)', fontFamily: "'Outfit', sans-serif", lineHeight: '1.6', margin: 0 }}>
           {shortTerm.message}
         </p>
 
-        {/* Career leverage insight for off-track state */}
-        {!isOnTrack && shortTerm.career_leverage_needed && shortTerm.formatted_needed_sip && (
+        {/* Reality Check Alert with Structured Comparison Tiles */}
+        {shortTerm.verdict === 'UNREALISTIC_TIMELINE' && (
+          <div style={{
+            marginTop: '14px',
+            paddingTop: '14px',
+            borderTop: '1px solid rgba(220,38,38,0.2)',
+          }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-2">
+              <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-semibold">
+                  1. Current Plan in {shortTerm.years_remaining} Yrs
+                </span>
+                <span className="text-base font-bold font-mono text-[var(--text-1)] block mt-0.5">
+                  {shortTerm.formatted_projected}
+                </span>
+                <span className="text-[11px] text-[var(--text-3)] block mt-0.5">
+                  Realistic safe accumulation
+                </span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                <span className="text-[10px] uppercase font-mono text-[var(--success)] block font-semibold">
+                  2. Safe Horizon for {shortTerm.formatted_target}
+                </span>
+                <span className="text-base font-black font-mono text-[var(--success)] block mt-0.5">
+                  ~{shortTerm.safe_alternative_years || 15} Years
+                </span>
+                <span className="text-[11px] text-[var(--text-3)] block mt-0.5">
+                  At 14% safe market CAGR
+                </span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                <span className="text-[10px] uppercase font-mono text-[var(--warning)] block font-semibold">
+                  3. If Deadline is Fixed
+                </span>
+                <span className="text-base font-bold font-mono text-[var(--warning)] block mt-0.5">
+                  {shortTerm.formatted_needed_sip} SIP
+                </span>
+                <span className="text-[11px] text-[var(--text-3)] block mt-0.5">
+                  Requires {shortTerm.formatted_needed_ctc} CTC
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--text-2)] mt-2">
+              💡 <strong>Actionable Recommendation:</strong> To grow wealth safely without gambling, set your timeline to <strong>~{shortTerm.safe_alternative_years || 15} years</strong> or adjust your short-term target to <strong>{shortTerm.formatted_projected}</strong>.
+            </p>
+          </div>
+        )}
+
+        {/* Career leverage insight for standard off-track state */}
+        {!isOnTrack && shortTerm.verdict !== 'UNREALISTIC_TIMELINE' && shortTerm.career_leverage_needed && shortTerm.formatted_needed_sip && (
           <div style={{
             marginTop: '12px',
             paddingTop: '12px',
@@ -263,7 +334,7 @@ export default function WealthProjectionCard({ trajectoryData }) {
               </label>
               <select
                 id="ltcg-select"
-                value={taxRate}
+                value={String(taxRate)}
                 onChange={e => setTaxRate(parseFloat(e.target.value))}
                 style={{
                   backgroundColor: 'var(--surface-2)',
@@ -278,9 +349,9 @@ export default function WealthProjectionCard({ trajectoryData }) {
                 }}
                 aria-label={`LTCG tax rate: ${taxRate} percent`}
               >
-                <option value="10.0">10% (Old)</option>
                 <option value="12.5">12.5% (Budget 2024)</option>
-                <option value="20.0">20%</option>
+                <option value="10">10% (Old)</option>
+                <option value="20">20%</option>
               </select>
             </div>
           </div>

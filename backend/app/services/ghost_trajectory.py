@@ -65,7 +65,8 @@ class CareerMilestoneProjection:
 
 class GhostTrajectoryEngine:
     """
-    Ghost Trajectory & Dynamic Timeline Engine (v5.1)
+    Ghost Trajectory & Dynamic Timeline Engine (v6.0)
+    Integrated with Reality Governor & Sanity Guardrails.
     """
 
     def calculate_short_term_reality(self, req: TrajectoryRequest) -> Dict[str, Any]:
@@ -73,16 +74,22 @@ class GhostTrajectoryEngine:
         months_remaining = max(1, (req.near_target_date.year - today.year) * 12 + (req.near_target_date.month - today.month))
         years_remaining = months_remaining / 12.0
         
-        r_m = (1 + req.assumed_cagr) ** (1/12) - 1
+        # Use the same CAGR the user configured (default 15%), not a hardcoded value
+        effective_cagr = req.assumed_cagr
+        r_m = (1 + effective_cagr) ** (1/12) - 1
         
-        total_contributions = req.lump_sum_amount + (req.monthly_investable_sip * months_remaining) + req.current_portfolio
+        # ── Step-Up SIP Projection (consistent with Career Roadmap & _solve_safe_months) ──
+        corpus = req.current_portfolio + req.lump_sum_amount
+        current_sip = req.monthly_investable_sip
+        total_contributions = req.current_portfolio + req.lump_sum_amount
         
-        try:
-            fv_lump = (req.current_portfolio + req.lump_sum_amount) * ((1 + r_m) ** months_remaining)
-            fv_sip = req.monthly_investable_sip * (((1 + r_m) ** months_remaining - 1) / r_m) if r_m > 0 else (req.monthly_investable_sip * months_remaining)
-            projected_short_fv = fv_lump + fv_sip
-        except OverflowError:
-            projected_short_fv = 1e12
+        for m in range(1, months_remaining + 1):
+            if m > 1 and (m % 12 == 1):
+                current_sip = current_sip * (1 + req.annual_step_up_pct)
+            corpus = (corpus + current_sip) * (1 + r_m)
+            total_contributions += current_sip
+        
+        projected_short_fv = corpus
 
         capital_gains = max(0.0, projected_short_fv - total_contributions)
         taxable_gains = max(0.0, capital_gains - 125000.0)
@@ -98,6 +105,7 @@ class GhostTrajectoryEngine:
             post_tax_amount=post_tax_corpus
         )
 
+        # 1. Target On Track Scenario
         if projected_short_fv >= req.near_target_amount or total_contributions >= req.near_target_amount:
             return {
                 "months_remaining": months_remaining,
@@ -124,6 +132,7 @@ class GhostTrajectoryEngine:
                            f", you will build a gross portfolio of {format_indian_currency(projected_short_fv)} ({format_indian_currency(post_tax_corpus)} post-tax) by {req.near_target_date.strftime('%b %Y')}, hitting your {format_indian_currency(req.near_target_amount)} goal!"
             }
 
+        # 2. Calculate Required Growth
         required_cagr = self._solve_required_cagr(
             current_pv=req.current_portfolio + req.lump_sum_amount,
             monthly_sip=req.monthly_investable_sip,
@@ -131,15 +140,67 @@ class GhostTrajectoryEngine:
             months=months_remaining
         )
         
-        career_leverage_needed = required_cagr > 0.25
-        
-        rem_target = req.near_target_amount - fv_lump
+        fv_existing = (req.current_portfolio + req.lump_sum_amount) * ((1 + r_m) ** months_remaining)
+        rem_target = max(0, req.near_target_amount - fv_existing)
         factor = ((1 + r_m) ** months_remaining - 1) / r_m if r_m > 0 else months_remaining
-        needed_sip_at_15pct = max(req.monthly_investable_sip, rem_target / factor)
+        needed_sip_at_15pct = max(req.monthly_investable_sip, rem_target / factor) if factor > 0 else req.monthly_investable_sip
         
         needed_take_home = needed_sip_at_15pct / req.savings_rate
         needed_ctc_annual = (needed_take_home / 0.85) * 12
+        needed_ctc_lpa = needed_ctc_annual / 100000.0
 
+        # 3. REALITY CHECK GOVERNOR (Detect impossible / gambling targets)
+        # e.g., Target requiring > 40% CAGR, or > ₹100 LPA CTC in < 3 years for multi-crore goals
+        is_unrealistic = (
+            required_cagr > 0.40 or 
+            (needed_ctc_lpa > 150.0 and months_remaining < 36 and req.near_target_amount >= 10000000.0) or
+            (months_remaining <= 12 and req.near_target_amount >= 5000000.0 and total_contributions < (req.near_target_amount * 0.20))
+        )
+
+        if is_unrealistic:
+            # Calculate safe realistic horizon using the user's configured CAGR with step-up SIP
+            safe_months = self._solve_safe_months(
+                current_pv=req.current_portfolio + req.lump_sum_amount,
+                initial_sip=req.monthly_investable_sip,
+                target_fv=req.near_target_amount,
+                step_up_pct=req.annual_step_up_pct,
+                safe_cagr=effective_cagr
+            )
+            safe_years = round(safe_months / 12.0, 1)
+
+            return {
+                "months_remaining": months_remaining,
+                "years_remaining": round(years_remaining, 1),
+                "total_contributions": round(total_contributions, 2),
+                "formatted_contributions": format_indian_currency(total_contributions),
+                "target_amount": req.near_target_amount,
+                "formatted_target": format_indian_currency(req.near_target_amount),
+                "projected_short_fv": round(projected_short_fv, 2),
+                "formatted_projected": format_indian_currency(projected_short_fv),
+                "ltcg_tax": round(ltcg_tax, 2),
+                "formatted_tax": format_indian_currency(ltcg_tax),
+                "post_tax_corpus": round(post_tax_corpus, 2),
+                "formatted_post_tax": format_indian_currency(post_tax_corpus),
+                "real_purchasing_power_today": round(real_purchasing_power_today, 2),
+                "formatted_real_power": format_indian_currency(real_purchasing_power_today),
+                "purchasing_power_note": purchasing_power_note,
+                "required_cagr": round(required_cagr, 4),
+                "career_leverage_needed": True,
+                "needed_sip_at_15pct": round(needed_sip_at_15pct, 2),
+                "formatted_needed_sip": format_indian_currency(needed_sip_at_15pct),
+                "needed_ctc_annual_lpa": round(needed_ctc_lpa, 2),
+                "formatted_needed_ctc": f"₹{needed_ctc_lpa:.1f} LPA",
+                "verdict": "UNREALISTIC_TIMELINE",
+                "safe_alternative_years": safe_years,
+                "message": (
+                    f"REALITY CHECK ALERT: Reaching {format_indian_currency(req.near_target_amount)} in only {months_remaining} months "
+                    f"is mathematically impossible without speculative gambling. No mutual fund or safe asset generates a required {required_cagr*100:.0f}% CAGR. "
+                    f"In {months_remaining} months, your current plan will safely accumulate {format_indian_currency(projected_short_fv)}. "
+                    f"To reach {format_indian_currency(req.near_target_amount)} safely at 14% market CAGR, extend your horizon to approximately {safe_years} years."
+                )
+            }
+
+        # 4. Standard Career Leverage Required Scenario
         return {
             "months_remaining": months_remaining,
             "years_remaining": round(years_remaining, 1),
@@ -157,13 +218,13 @@ class GhostTrajectoryEngine:
             "formatted_real_power": format_indian_currency(real_purchasing_power_today),
             "purchasing_power_note": purchasing_power_note,
             "required_cagr": round(required_cagr, 4),
-            "career_leverage_needed": career_leverage_needed,
+            "career_leverage_needed": True,
             "needed_sip_at_15pct": round(needed_sip_at_15pct, 2),
             "formatted_needed_sip": format_indian_currency(needed_sip_at_15pct),
-            "needed_ctc_annual_lpa": round(needed_ctc_annual / 100000, 2),
-            "formatted_needed_ctc": f"₹{needed_ctc_annual/100000:.1f} LPA",
+            "needed_ctc_annual_lpa": round(needed_ctc_lpa, 2),
+            "formatted_needed_ctc": f"₹{needed_ctc_lpa:.1f} LPA",
             "verdict": "CAREER_LEVERAGE_REQUIRED",
-            "message": f"BLUNT ADVISOR VERDICT: To hit {format_indian_currency(req.near_target_amount)} by {req.near_target_date.year} (in {months_remaining} months), your current {format_indian_currency(req.monthly_investable_sip)}/mo SIP falls short. Market returns alone cannot bridge the gap without an absurd {required_cagr*100:.0f}% CAGR. You MUST scale your monthly SIP to {format_indian_currency(needed_sip_at_15pct)}/mo (requires CTC jump to ~₹{needed_ctc_annual/100000:.1f} LPA)."
+            "message": f"BLUNT ADVISOR VERDICT: To hit {format_indian_currency(req.near_target_amount)} by {req.near_target_date.year} (in {months_remaining} months), your current {format_indian_currency(req.monthly_investable_sip)}/mo SIP falls short. Market returns alone cannot bridge the gap without an unrealistic {required_cagr*100:.0f}% CAGR. You MUST scale your monthly SIP to {format_indian_currency(needed_sip_at_15pct)}/mo (requires CTC jump to ~₹{needed_ctc_lpa:.1f} LPA)."
         }
 
     def generate_career_roadmap(self, req: TrajectoryRequest) -> List[CareerMilestoneProjection]:
@@ -177,19 +238,19 @@ class GhostTrajectoryEngine:
         current_sip = req.monthly_investable_sip
 
         roles = [
-            "Entry Level Developer",
-            "Junior Developer (Role Jump)",
-            "Mid-Level Software Engineer",
-            "Senior Developer (Product/Tech)",
-            "Senior Developer / Tech Lead",
-            "Staff Engineer / Engineering Manager",
-            "Senior Manager / Principal Engineer",
-            "Director of Engineering / Architect",
-            "VP / Distinguished Engineer",
+            "Entry Level Specialist",
+            "Mid-Level Professional (Skill Jump)",
+            "Senior Specialist / Lead",
+            "Staff Lead / Technical Lead",
+            "Manager / Senior Architect",
+            "Principal / Practice Lead",
+            "Director / Department Head",
+            "Vice President / Business Leader",
             "Executive / Enterprise Founder",
-            "Managing Partner / Angel Investor",
+            "Partner / Strategic Investor",
+            "Managing Director / Angel Backer",
             "Principal Partner / Board Member",
-            "Chairman / Family Office Founder"
+            "Family Office Founder / Chairman"
         ]
 
         for idx, year in enumerate(range(start_year, end_year + 1)):
@@ -198,15 +259,13 @@ class GhostTrajectoryEngine:
 
             if idx == 0:
                 ctc_lpa = base_ctc
+                monthly_sip = req.monthly_investable_sip
             else:
-                growth_factor = 1.0 + min(0.25, 0.15 + (idx * 0.01))
+                growth_factor = 1.10 + min(0.04, idx * 0.005) # Realistic 10-14% CTC growth
                 base_ctc = base_ctc * growth_factor
                 ctc_lpa = base_ctc
-
-            monthly_take_home = (ctc_lpa * 100000 / 12) * 0.85
-            if idx > 0:
                 current_sip = current_sip * (1 + req.annual_step_up_pct)
-            monthly_sip = max(current_sip, monthly_take_home * req.savings_rate)
+                monthly_sip = current_sip
 
             for _ in range(12):
                 try:
@@ -248,3 +307,16 @@ class GhostTrajectoryEngine:
             return ((1 + req_monthly) ** 12) - 1
         except OverflowError:
             return 999.0
+
+    def _solve_safe_months(self, current_pv: float, initial_sip: float, target_fv: float, step_up_pct: float, safe_cagr: float) -> int:
+        r_m = (1 + safe_cagr) ** (1/12) - 1
+        corpus = current_pv
+        current_sip = initial_sip
+        
+        for m in range(1, 360):  # max 30 years
+            if m > 1 and (m % 12 == 1):
+                current_sip = current_sip * (1 + step_up_pct)
+            corpus = (corpus + current_sip) * (1 + r_m)
+            if corpus >= target_fv:
+                return m
+        return 180  # fallback 15 years
