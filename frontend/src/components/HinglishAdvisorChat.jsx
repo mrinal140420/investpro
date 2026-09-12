@@ -125,14 +125,14 @@ export default function HinglishAdvisorChat({ params, fundUniverse }) {
         {!isOpen && (
           <button
             onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs shadow-2xl transition-all transform hover:scale-105 border border-cyan-400/30 cursor-pointer"
+            className="btn-gold flex items-center gap-2.5 px-4 py-3 rounded-full text-xs font-bold shadow-2xl transition-all transform hover:scale-105 border border-[rgba(255,255,255,0.3)] cursor-pointer"
             aria-label="Open AI FinBhai Advisor Chat"
           >
-            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-              <Bot className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-full bg-black/30 flex items-center justify-center p-0.5 shadow-inner">
+              <img src="/LOGO.png" alt="Bull Logo" className="w-5 h-5 object-contain" />
             </div>
             <span>FinBhai AI Copilot</span>
-            <span className="px-1.5 py-0.5 rounded bg-emerald-400/30 text-emerald-200 text-[10px] font-mono font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-black/20 text-[#1a0609] text-[10px] font-mono font-bold">
               Hinglish
             </span>
           </button>
@@ -141,20 +141,20 @@ export default function HinglishAdvisorChat({ params, fundUniverse }) {
 
       {/* ── Sliding Chat Drawer / Modal ── */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh] rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-6 right-6 z-50 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh] rounded-2xl bg-[var(--surface)] border border-[var(--accent-border)] shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
           
           {/* Header */}
-          <div className="p-3.5 bg-gradient-to-r from-[#0f172a] to-[#1e293b] border-b border-[var(--border)] flex items-center justify-between text-white">
+          <div className="p-3.5 bg-gradient-to-r from-[var(--maroon-dark)] to-[var(--surface)] border-b border-[var(--border)] flex items-center justify-between text-white">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
-                <Bot className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-lg bg-[rgba(226,185,111,0.15)] border border-[rgba(226,185,111,0.3)] flex items-center justify-center p-1">
+                <img src="/LOGO.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs font-bold text-white">FinBhai AI Advisor</h3>
+                  <h3 className="text-xs font-bold text-gold-gradient font-serif">FinBhai AI Advisor</h3>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
-                <p className="text-[10px] text-slate-400">Portfolio-Grounded Hinglish Assistant</p>
+                <p className="text-[10px] text-[var(--text-3)]">Portfolio-Grounded Hinglish Assistant</p>
               </div>
             </div>
 

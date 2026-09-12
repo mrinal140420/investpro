@@ -14,29 +14,31 @@ export default function EmptyState({ validation = {} }) {
   const filledCount = Object.values(stateMap).filter(Boolean).length;
 
   return (
-    <div className="ip-card" style={{
+    <div className="ip-card accent-stripe" style={{
       minHeight: '340px',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       textAlign: 'center', padding: '48px 32px',
-      background: 'linear-gradient(160deg, var(--surface) 0%, var(--bg-elevated) 100%)',
     }}>
       {/* Icon */}
       <div style={{
-        width: '52px', height: '52px', borderRadius: '14px',
-        background: 'var(--accent-glow)', border: '1px solid var(--accent-border)',
+        width: '64px', height: '64px', borderRadius: '18px',
+        background: 'rgba(226,185,111,0.12)', border: '1px solid var(--accent-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: '20px',
-        boxShadow: '0 4px 20px var(--accent-glow)',
+        boxShadow: '0 8px 24px rgba(226,185,111,0.25)',
       }}>
-        <BarChart2 style={{ width: '24px', height: '24px', color: 'var(--accent-bright)' }} />
+        <img
+          src="/LOGO.png"
+          alt="InvestPro Bull Logo"
+          className="w-11 h-11 object-contain filter drop-shadow-[0_2px_8px_rgba(226,185,111,0.4)] animate-pulse-subtle"
+        />
       </div>
 
       <h3 style={{
-        fontFamily: "'Outfit', sans-serif", fontSize: '18px',
-        fontWeight: '700', color: 'var(--text-1)',
-        letterSpacing: '-0.02em', marginBottom: '10px',
-      }}>
+        fontFamily: "'Cinzel', serif", fontSize: '20px',
+        fontWeight: '700', letterSpacing: '0.02em', marginBottom: '10px',
+      }} className="text-gold-gradient">
         Complete your profile to see projections
       </h3>
 

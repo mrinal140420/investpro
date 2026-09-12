@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export default function Navbar({ theme, setTheme }) {
+export default function Navbar({ theme, setTheme, onOpenCasModal }) {
   const isLight = theme === 'light';
   return (
     <header style={{
@@ -15,48 +15,73 @@ export default function Navbar({ theme, setTheme }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
 
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '30px', height: '30px', borderRadius: '8px',
-            background: 'linear-gradient(135deg, var(--accent) 0%, #6366f1 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px var(--accent-glow)',
-            flexShrink: 0,
-          }}>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d="M2 11 L5.5 6.5 L9 9 L13 3.5" stroke="white" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="relative group cursor-pointer flex items-center">
+            <img
+              src="/LOGO.png"
+              alt="InvestPro Royal Bull Logo"
+              className="h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_2px_8px_rgba(226,185,111,0.35)]"
+            />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{
-              fontFamily: "'Outfit', sans-serif", fontSize: '16px', fontWeight: '700',
-              color: 'var(--text-1)', letterSpacing: '-0.02em',
-            }}>InvestPro</span>
-            <span className="hidden sm:inline" style={{
-              fontFamily: "'Outfit', sans-serif", fontSize: '12px',
-              color: 'var(--text-3)', fontWeight: '400',
-            }}>Investment Planner</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <span style={{
+                fontFamily: "'Cinzel', serif", fontSize: '18px', fontWeight: '800',
+                letterSpacing: '0.04em',
+              }} className="text-gold-gradient">
+                INVESTPRO
+              </span>
+              <span className="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold" style={{
+                backgroundColor: 'rgba(226,185,111,0.12)',
+                color: 'var(--accent-bright)',
+                border: '1px solid rgba(226,185,111,0.25)',
+                letterSpacing: '0.05em'
+              }}>
+                EST. 2026
+              </span>
+            </div>
+            <span className="hidden sm:inline text-[10px] uppercase font-semibold" style={{
+              letterSpacing: '0.12em',
+              color: 'var(--text-3)',
+              fontFamily: "'Outfit', sans-serif",
+              marginTop: '-2px',
+            }}>
+              Digital Family Office
+            </span>
           </div>
         </div>
 
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme(isLight ? 'dark' : 'light')}
-          aria-label="Toggle theme"
-          style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--surface-2)',
-            color: 'var(--text-2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)'; }}
-        >
-          {isLight ? <Moon style={{ width: '15px', height: '15px' }} /> : <Sun style={{ width: '15px', height: '15px' }} />}
-        </button>
+        {/* CAS Ingestion & Theme toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={onOpenCasModal}
+            className="btn-gold flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Import CAS PDF</span>
+          </button>
+
+          <button
+            onClick={() => setTheme(isLight ? 'dark' : 'light')}
+            aria-label="Toggle theme"
+            style={{
+              width: '34px', height: '34px', borderRadius: '8px',
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--surface-2)',
+              color: 'var(--text-2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)'; }}
+          >
+            {isLight ? <Moon style={{ width: '15px', height: '15px' }} /> : <Sun style={{ width: '15px', height: '15px' }} />}
+          </button>
+        </div>
       </div>
     </header>
   );

@@ -62,20 +62,12 @@ export default function InteractiveControlPanel({ params, setParams, onRecalcula
         <button
           onClick={onRecalculate}
           disabled={loading || !isFormValid}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            padding: '9px 18px', borderRadius: '8px', border: 'none',
-            fontSize: '13px', fontWeight: '600', cursor: isFormValid ? 'pointer' : 'not-allowed',
-            fontFamily: "'Outfit', sans-serif",
-            backgroundColor: isFormValid ? 'var(--accent)' : 'var(--surface-3)',
-            color: isFormValid ? '#fff' : 'var(--text-3)',
-            boxShadow: isFormValid ? '0 2px 12px var(--accent-glow)' : 'none',
-            transition: 'all 0.15s',
-            opacity: loading ? 0.7 : 1,
-          }}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs font-sans transition-all shadow-md ${
+            isFormValid ? 'btn-gold cursor-pointer' : 'bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-60'
+          }`}
         >
           <RefreshCw style={{ width: '13px', height: '13px' }} className={loading ? 'spin-slow' : ''} />
-          {loading ? 'Recalculating...' : 'Recalculate'}
+          <span>{loading ? 'Recalculating...' : 'Recalculate Strategy'}</span>
         </button>
       </div>
 

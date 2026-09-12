@@ -9,7 +9,10 @@ import GoalSlicingCard from './components/GoalSlicingCard';
 import TaxAndMilestonesCard from './components/TaxAndMilestonesCard';
 import HinglishAdvisorChat from './components/HinglishAdvisorChat';
 import EmptyState from './components/EmptyState';
-import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles } from 'lucide-react';
+import BehavioralShield from './components/BehavioralShield';
+import DirectiveCommandCenter from './components/DirectiveCommandCenter';
+import CasUploadModal from './components/CasUploadModal';
+import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock } from 'lucide-react';
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
@@ -83,7 +86,8 @@ function Skeleton({ height }) {
 
 // ── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [activeTab, setActiveTab] = useState('barbell'); // 'barbell' | 'reverse_emi' | 'tax_milestones'
+  const [activeTab, setActiveTab] = useState('barbell'); // 'barbell' | 'behavioral_shield' | 'directive_center' | 'reverse_emi' | 'tax_milestones'
+  const [isCasModalOpen, setIsCasModalOpen] = useState(false);
 
   // Read initial theme from localStorage (set by index.html init script)
   const [theme, setTheme] = useState(() => {
@@ -213,77 +217,116 @@ export default function App() {
         fontFamily: "'Outfit', sans-serif",
         transition: 'background-color 0.2s ease, color 0.2s ease',
       }}>
-        <Navbar theme={theme} setTheme={handleToggleTheme} />
+        <Navbar
+          theme={theme}
+          setTheme={handleToggleTheme}
+          onOpenCasModal={() => setIsCasModalOpen(true)}
+        />
 
         <main
           className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8"
           style={{ paddingTop: '24px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '20px' }}
         >
           {/* Beginner to Pro Mutual Fund Strategy Banner */}
-          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-[var(--success)] font-bold">
-                <TrendingUp className="w-5 h-5" />
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-[var(--surface)] via-[var(--surface-2)] to-[var(--surface)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-5 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-[var(--accent-glow)] to-transparent pointer-events-none opacity-40" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--surface-3)] to-[var(--surface)] border border-[var(--accent-border)] flex items-center justify-center p-1 shadow-md">
+                <img
+                  src="/LOGO.png"
+                  alt="InvestPro Bull Logo"
+                  className="w-full h-full object-contain filter drop-shadow-[0_2px_6px_rgba(226,185,111,0.4)]"
+                />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-[var(--text-1)]">
-                    Beginner to Pro Mutual Fund Wealth Command Center
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-base sm:text-lg font-bold text-[var(--text-1)] tracking-tight">
+                    InvestPro Digital Family Office Command Center
                   </h1>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20">
+                  <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold rounded-full bg-[rgba(226,185,111,0.15)] text-[var(--accent-bright)] border border-[rgba(226,185,111,0.3)]">
                     100% Direct Mutual Funds
                   </span>
+                  <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-emerald-500/10 text-[var(--success)] border border-emerald-500/25">
+                    Zero Paid APIs
+                  </span>
                 </div>
-                <p className="text-xs text-[var(--text-3)]">
-                  Pure Indian Mutual Fund compounding: 10% Step-Up SIPs, Barbell Multi-Asset Allocation, Zero-Debt Cash Goals, and Section 112A Tax Savings.
+                <p className="text-xs text-[var(--text-2)] mt-0.5 max-w-2xl leading-relaxed">
+                  Deterministic wealth compounding: 10% Step-Up SIPs, 50/30/10/10 Factor Barbell, Asymmetric Drawdown Deployment, and Section 112A Tax Harvesting.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-[var(--text-3)] hidden sm:inline">Execution Partner:</span>
-              <span className="px-2.5 py-1 rounded bg-[var(--surface)] border border-[var(--border)] text-xs font-mono font-bold text-[var(--accent)]">
-                Groww (Direct Growth)
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] uppercase font-semibold text-[var(--text-3)] tracking-wider">Execution Hub</span>
+                <span className="text-xs font-mono font-bold text-[var(--accent-bright)]">Direct Growth Mode</span>
+              </div>
+              <span className="px-3 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--accent-border)] text-xs font-mono font-bold text-[var(--gold)] shadow-sm">
+                Groww Direct
               </span>
             </div>
           </div>
 
           {/* Navigation Subsystem Tabs */}
-          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] w-fit shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] w-fit shadow-md">
             <button
               onClick={() => setActiveTab('barbell')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'barbell'
-                  ? 'bg-[var(--accent)] text-white shadow-sm'
-                  : 'text-[var(--text-2)] hover:text-[var(--text-1)]'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
               }`}
             >
               <Compass className="w-4 h-4" />
-              <span>1. Long-Term Wealth & Step-Up Barbell</span>
+              <span>1. Long-Term Wealth & Barbell</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('behavioral_shield')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'behavioral_shield'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>2. Behavioral Shield (Locked Goals)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('directive_center')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'directive_center'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span>3. Directive Command Center</span>
             </button>
 
             <button
               onClick={() => setActiveTab('reverse_emi')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'reverse_emi'
-                  ? 'bg-[var(--accent)] text-white shadow-sm'
-                  : 'text-[var(--text-2)] hover:text-[var(--text-1)]'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
               }`}
             >
               <PiggyBank className="w-4 h-4" />
-              <span>2. Emergency Shield & Lifestyle Goals</span>
+              <span>4. Emergency Shield & Goals</span>
             </button>
 
             <button
               onClick={() => setActiveTab('tax_milestones')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'tax_milestones'
-                  ? 'bg-[var(--accent)] text-white shadow-sm'
-                  : 'text-[var(--text-2)] hover:text-[var(--text-1)]'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
               }`}
             >
               <Award className="w-4 h-4" />
-              <span>3. Tax Savings & Freedom Milestones</span>
+              <span>5. Tax Savings & Milestones</span>
             </button>
           </div>
 
@@ -327,18 +370,37 @@ export default function App() {
             </>
           )}
 
-          {/* Tab 2: Emergency Shield & Lifestyle Goal Slicer */}
+          {/* Tab 2: Behavioral Shield & Locked Goals */}
+          {activeTab === 'behavioral_shield' && (
+            <BehavioralShield />
+          )}
+
+          {/* Tab 3: Directive Command Center (Approval Queue) */}
+          {activeTab === 'directive_center' && (
+            <DirectiveCommandCenter />
+          )}
+
+          {/* Tab 4: Emergency Shield & Lifestyle Goal Slicer */}
           {activeTab === 'reverse_emi' && (
             <GoalSlicingCard />
           )}
 
-          {/* Tab 3: Section 112A Tax Savings & 1% Freedom Index */}
+          {/* Tab 5: Section 112A Tax Savings & 1% Freedom Index */}
           {activeTab === 'tax_milestones' && (
             <TaxAndMilestonesCard 
               currentPortfolio={params.current_portfolio + params.lump_sum_amount}
               currentCtcLpa={params.current_ctc_lpa}
             />
           )}
+
+          {/* CAS PDF Ingestion Modal */}
+          <CasUploadModal
+            isOpen={isCasModalOpen}
+            onClose={() => setIsCasModalOpen(false)}
+            onIngestionComplete={(data) => {
+              console.log('CAS Statement Imported Successfully:', data);
+            }}
+          />
 
           {/* Hinglish AI Financial Advisor Chatbot */}
           <HinglishAdvisorChat params={params} fundUniverse={fundUniverse} />
