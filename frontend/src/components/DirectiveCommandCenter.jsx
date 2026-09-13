@@ -184,6 +184,9 @@ export default function DirectiveCommandCenter({ userParams }) {
     ]);
   }, [currentSip, currentPortfolio, annualStepUpPct]);
 
+  const [activeFilter, setActiveFilter] = useState('PENDING'); // 'PENDING' | 'EXECUTED'
+  const [approvingId, setApprovingId] = useState(null);
+
   const handleApprove = async (id) => {
     setApprovingId(id);
     try {
