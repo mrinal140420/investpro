@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, PieChart, ShieldCheck, ChevronDown, ChevronUp, AlertCircle, Info, Sparkles, CheckCircle2, TrendingUp, Layers } from 'lucide-react';
+import { ExternalLink, PieChart, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, AlertCircle, Info, Sparkles, CheckCircle2, TrendingUp, Layers, Lock, Unlock } from 'lucide-react';
 import { getEnrichedFundUniverse } from '../utils/financialCalculations';
 import { format_indian_currency } from '../utils/formatters';
 
@@ -35,18 +35,20 @@ function getRiskStyle(risk = '') {
 
 export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lumpSum, riskMode = 'global_multi_asset' }) {
   const [expandedFundId, setExpandedFundId] = useState(null);
+  const [showTheoretical, setShowTheoretical] = useState(false);
 
   // Dynamic enrichment: If monthlySip prop is provided, calculate real-time rupee splits
   const activeSip = monthlySip || (fundUniverse && fundUniverse.total_monthly_sip) || 25000;
   const activeLump = lumpSum !== undefined ? lumpSum : ((fundUniverse && fundUniverse.total_lump_sum) || 0);
   const activeMode = riskMode || (fundUniverse && fundUniverse.risk_mode) || 'global_multi_asset';
 
-  const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode);
+  const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode, showTheoretical);
   const assets = enrichedData.asset_breakdown || [];
   const weightedCagr = enrichedData.portfolio_weighted_5y_cagr;
   const weightedTer = enrichedData.portfolio_weighted_ter;
   const totalGrowth = enrichedData.formatted_total_annual_growth;
   const strategyLabel = STRATEGY_LABELS[activeMode] || '🌐 Global Multi-Asset Barbell';
+  const isAdaptive = enrichedData.is_adaptive_sizing_active;
 
   const toggleExpand = (fundId) => {
     setExpandedFundId(prev => prev === fundId ? null : fundId);
@@ -123,6 +125,81 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
         </div>
       </div>
 
+      {/* ── Adaptive Capital Sizing & AMC Floor Guard Banner ── */}
+      {activeSip < 2500 && (
+        <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <h3 className="text-xs sm:text-sm font-bold text-[var(--text-1)]">
+                Adaptive Capital Sizing & AMC Minimum Floor Guard Active
+              </h3>
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                {enrichedData.tier_name}
+              </span>
+            </div>
+
+            {/* Executable vs Theoretical Toggle */}
+            <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
+              <button
+                type="button"
+                onClick={() => setShowTheoretical(false)}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                  !showTheoretical
+                    ? 'bg-[var(--accent)] text-white shadow-sm'
+                    : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
+                }`}
+              >
+                Executable Plan ({enrichedData.active_fund_count} Active)
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTheoretical(true)}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                  showTheoretical
+                    ? 'bg-[var(--accent)] text-white shadow-sm'
+                    : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
+                }`}
+              >
+                Theoretical 5-Fund Target
+              </button>
+            </div>
+          </div>
+
+          <p className="text-xs text-[var(--text-2)] leading-relaxed">
+            {!showTheoretical ? (
+              <>
+                <strong>Real-World Execution Rule:</strong> Indian mutual fund AMCs enforce a minimum ₹100 or ₹500 monthly SIP floor. Slicing <strong>{format_indian_currency(activeSip)}/mo</strong> across 5 funds (e.g. ₹75, ₹60, ₹45) is rejected by bank NACH mandates and creates zero extra diversification over a broad 30-stock index. To guarantee 100% execution, capital is concentrated into <strong>UTI Nifty 200 Momentum 30</strong>. Remaining barbell pillars unlock as your 10% annual Step-Up scales your capital!
+              </>
+            ) : (
+              <>
+                <strong className="text-amber-400">⚠️ Theoretical 5-Fund Projection:</strong> Displaying raw percentage splits. Note that {enrichedData.theoretical_unexecutable_count} of 5 funds receive sub-₹100 allocations which cannot be processed on Groww or Zerodha until monthly SIP reaches ₹2,500. Switch to <em>Executable Plan</em> for real-world execution.
+              </>
+            )}
+          </p>
+
+          {/* Staged Step-Up Unlock Ladder */}
+          <div className="pt-2 border-t border-amber-500/15 flex flex-wrap items-center gap-2 text-[11px] font-mono">
+            <span className="text-[var(--text-3)] uppercase text-[10px] font-bold">Step-Up Unlock Ladder:</span>
+            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip < 500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-2)]'}`}>
+              {activeSip < 500 ? '● Active (< ₹500)' : '✓ Unlocked'}: UTI Momentum 30 (100%)
+            </span>
+            <span className="text-[var(--text-3)]">→</span>
+            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip >= 500 && activeSip < 1500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-3)]'}`}>
+              ₹500/mo: + Tata Small Cap (2 Funds)
+            </span>
+            <span className="text-[var(--text-3)]">→</span>
+            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip >= 1500 && activeSip < 2500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-3)]'}`}>
+              ₹1,500/mo: + Motilal US S&P 500 (3 Funds)
+            </span>
+            <span className="text-[var(--text-3)]">→</span>
+            <span className="px-2 py-0.5 rounded-full font-bold bg-[var(--surface-2)] text-[var(--text-3)]">
+              ₹2,500/mo: Full 5-Fund Barbell
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── Mutual Fund Deep Research Table ── */}
       <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] mb-4">
         <table className="w-full border-collapse text-left text-xs font-sans">
@@ -143,19 +220,27 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
               const returns = item.returns || {};
               const isExpanded = expandedFundId === item.id;
               const riskStyle = getRiskStyle(item.risk_level || 'High');
+              const isLocked = item.is_locked;
 
               return (
                 <React.Fragment key={item.id}>
                   <tr 
                     className={`transition-colors cursor-pointer ${
-                      isExpanded ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-2)]'
+                      isExpanded
+                        ? 'bg-[var(--surface-2)]'
+                        : isLocked
+                        ? 'opacity-65 hover:opacity-100 bg-[var(--surface-2)]/20 hover:bg-[var(--surface-2)]/50'
+                        : 'hover:bg-[var(--surface-2)]'
                     }`}
                     onClick={() => toggleExpand(item.id)}
                   >
                     {/* Fund Name & Role */}
                     <td className="py-3.5 px-4 max-w-xs">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[var(--text-1)] text-xs block">
+                        {isLocked && (
+                          <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" title="Locked until Step-Up" />
+                        )}
+                        <span className={`font-bold text-xs block ${isLocked ? 'text-[var(--text-2)]' : 'text-[var(--text-1)]'}`}>
                           {item.fund_name}
                         </span>
                       </div>
@@ -177,14 +262,30 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
 
                     {/* Exact Rupee Allocation */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="font-mono font-bold text-sm text-[var(--success)]">
-                          {item.formatted_sip}
-                        </span>
-                        <span className="text-[10px] font-mono text-[var(--text-3)]">
-                          {item.allocation_pct}% of total SIP
-                        </span>
-                      </div>
+                      {isLocked ? (
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-xs text-[var(--text-3)] flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-400" /> ₹0/mo
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-400/90 font-medium">
+                            {item.status_label}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-sm text-[var(--success)]">
+                            {item.formatted_sip}
+                          </span>
+                          <span className="text-[10px] font-mono text-[var(--text-3)]">
+                            {item.effective_allocation_pct || item.allocation_pct}% of total SIP
+                          </span>
+                          {item.is_below_amc_min && (
+                            <span className="text-[9px] font-mono font-bold text-rose-400 mt-0.5">
+                              ⚠️ Below AMC Min (₹{item.amc_min_sip})
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* TER */}
@@ -249,14 +350,26 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
 
                     {/* Groww Direct Execution Link */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <a
-                        href={item.groww_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--accent)] text-xs font-mono font-bold text-[var(--accent)] transition-all hover:shadow-sm"
-                      >
-                        Groww <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {isLocked ? (
+                        <a
+                          href={item.groww_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-[11px] font-mono text-[var(--text-3)] hover:text-[var(--text-1)] hover:border-[var(--accent)] transition-all"
+                          title="Preview fund on Groww ahead of Step-Up unlock"
+                        >
+                          Preview <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <a
+                          href={item.groww_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500 text-xs font-mono font-bold text-[var(--success)] transition-all hover:shadow-sm"
+                        >
+                          Groww Direct <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </td>
                   </tr>
 

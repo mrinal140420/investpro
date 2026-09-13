@@ -97,6 +97,44 @@ class HinglishAdvisorService:
         target = float(ctx.get("target_amount", 5000000.0) or 5000000.0)
         cagr = 0.145  # 14.5% blended multi-asset Barbell CAGR
 
+        # ── 0. AMC MINIMUM SIP CONSTRAINTS & ADAPTIVE ALLOCATION WATERFALL ──
+        # e.g. "100rs is minimum", "75/month", "constraints", "4-5 me dena", "rule based", "suggest what is better"
+        if (
+            ("constraint" in q or "rule based" in q or "rule-based" in q or "suggest what is better" in q or "what is better" in q or "kya better" in q) or
+            ("100" in q and any(k in q for k in ["min", "kam", "limit", "mandate", "reject", "rule", "floor"])) or
+            any(k in q for k in ["75", "45", "60"]) or
+            any(k in q for k in ["4-5", "4 ya 5", "paanch", "5 fund", "batna", "baatna"]) or
+            ("minimum" in q and any(k in q for k in ["mf", "sip", "amc", "fund", "groww"]))
+        ):
+            return (
+                "**Bhai, aapne bilkul 100% practical aur mathematically accurate point uthaya hai! Yahi difference hota hai ek generic calculator me aur ek real-world SEBI RIA-Level execution system me! 🎯**\n\n"
+                "### 1. The Real-World Constraint: AMFI / AMC Minimum SIP Floor\n"
+                "Indian mutual funds (Groww, Zerodha Coin, MF Central) me har fund house (AMC) ka apna ek **Minimum SIP Rule** hota hai:\n"
+                "• Broad Index Funds (jaise UTI Momentum 30, HDFC Nifty 50): **₹100/mo minimum**\n"
+                "• Active Small Cap / US Tech FoF (jaise Motilal S&P 500): **₹500/mo minimum**\n"
+                "• Bank NACH Mandate: Payment gateways sub-₹100 recurring debits ko reject kar dete hain.\n\n"
+                "Agar hum ₹300 ko rigidly 5 funds me baatenge (₹75, ₹60, ₹60, ₹60, ₹45), toh **ek bhi fund execute nahi hoga!** Har bank payment mandate fail ho jayega.\n\n"
+                "### 2. Why Slicing ₹300 into 5 Funds is Bad Financial Engineering\n"
+                "1. **Zero Incremental Diversification:** Ek single broad index fund (jaise UTI Nifty 200 Momentum 30) already India ke top 30 large/midcap market leaders ko hold karta hai. ₹300 me 5 alag folios kholne se extra diversification 0% milta hai.\n"
+                "2. **Folio & Tax Accounting Chaos:** 5 alag-alag folios banenge. Saal ke end me ₹50 ke micro-gains par Section 112A capital gains calculate karna tax nightmare ban jayega.\n"
+                "3. **Mandate Rejection Risk:** Bank me 5 micro auto-debits lagane se ECS penalty risk badhta hai.\n\n"
+                "### 3. What is Better? InvestPro's Adaptive Staged Compounding Waterfall\n"
+                "InvestPro ab static percentage rule use nahi karta. System dynamically aapke SIP capital ke hisab se **Staged Compounding Waterfall** lagata hai:\n\n"
+                "• **Stage 1: Micro-Seed Stage (< ₹500/mo — e.g. Aapka ₹300/mo):**\n"
+                "  - **Execution:** 100% Capital (₹300/mo) $\\to$ **1 Single High-Conviction Core Engine** (*UTI Nifty 200 Momentum 30 Index Fund Direct*).\n"
+                "  - **Status of Other 4 Funds:** Marked as **'Locked until Step-Up'**. 100% executable on Groww!\n\n"
+                "• **Stage 2: Starter Core + Alpha (₹500 to ₹1,499/mo):**\n"
+                "  - 2 Funds (50% HDFC Nifty 50 + 50% Tata Small Cap).\n\n"
+                "• **Stage 3: Multi-Pillar Growth (₹1,500 to ₹2,499/mo):**\n"
+                "  - 3 Funds (+ Motilal Oswal US S&P 500 FoF).\n\n"
+                "• **Stage 4: Full Institutional Barbell (₹2,500+/mo):**\n"
+                "  - All 5 Funds unlock simultaneously.\n\n"
+                "### 4. Actionable Directive\n"
+                "1. Aaj hi Groww pe jaao aur **UTI Nifty 200 Momentum 30 Direct Growth** me single **₹300/mo SIP** mandate lagao.\n"
+                "2. 10%–15% Annual Step-Up ON rakho. Jaise hi SIP ₹1,000 pahuchegi, InvestPro automatically prompt karega Tata Small Cap activate karne ke liye!\n"
+                "3. Portfolio Card me humne **'Adaptive AMC Floor Guard'** toggle add kar diya hai — aap live executable 1-fund plan aur theoretical roadmap dono switch karke dekh sakte hain!"
+            )
+
         # ── 1. TOUGH SITUATION / EMOTIONAL COMEBACK + 1 CRORE AMBITION ──
         # e.g. "halat kharab hai", "paise nahi hai", "struggle", "poor", "low salary", "debt"
         if ("halat" in q or "kharab" in q or "gareeb" in q or "paise nahi" in q or "struggle" in q or "tension" in q or "low salary" in q or "kam salary" in q or "karz" in q or "debt" in q):
