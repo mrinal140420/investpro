@@ -377,7 +377,7 @@ export default function App() {
 
           {/* Tab 3: Directive Command Center (Approval Queue) */}
           {activeTab === 'directive_center' && (
-            <DirectiveCommandCenter />
+            <DirectiveCommandCenter userParams={params} />
           )}
 
           {/* Tab 4: Emergency Shield & Lifestyle Goal Slicer */}

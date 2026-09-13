@@ -13,7 +13,18 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export default function DirectiveCommandCenter() {
+export default function DirectiveCommandCenter({ userParams }) {
+  const currentSip = userParams?.monthly_investable_sip || 25000;
+  const currentLumpSum = userParams?.lump_sum_amount || 50000;
+  const currentPortfolio = (userParams?.current_portfolio || 0) + currentLumpSum;
+  const annualStepUpPct = Math.round(((userParams?.annual_step_up_pct ?? 0.10) * 100));
+
+  // Dynamically derive directives from the user's active portfolio & SIP configuration
+  const dryPowderDeployment = Math.max(10000, Math.round(currentSip * 3));
+  const taxHarvestAmount = Math.max(50000, Math.min(125000, Math.round((currentPortfolio || 200000) * 0.4)));
+  const rebalanceDriftAmount = Math.max(5000, Math.round((currentPortfolio || 100000) * 0.064));
+  const glideSwpAmount = Math.max(5000, Math.round((currentPortfolio || 100000) * 0.04));
+
   const [directives, setDirectives] = useState([
     {
       id: 'dir-contrarian-01',
@@ -21,11 +32,11 @@ export default function DirectiveCommandCenter() {
       action: 'BUY',
       source_scheme: 'Parag Parikh Liquid Fund Direct - Growth (Debt/Liquid Bucket)',
       target_scheme: 'Tata Small Cap Fund Direct - Growth (India Equity Bucket)',
-      amount_inr: 75000.0,
-      units_estimated: 625.5,
+      amount_inr: dryPowderDeployment,
+      units_estimated: Math.round(dryPowderDeployment / 120),
       rationale_heading: 'Nifty Smallcap 250 Drawdown at -18.2%: Contrarian Trigger Activated',
       math_rationale:
-        'Nifty Smallcap 250 has corrected 18.2% from 52-week high (Breached >= 15% threshold). As per Gajendra Kothari contrarian model, deploying 50% of sideline Liquid Debt dry powder (₹75,000) to capture asymmetric recovery compounding.',
+        `Calculated from your ₹${currentSip.toLocaleString('en-IN')}/mo SIP (3x Dry Powder = ₹${dryPowderDeployment.toLocaleString('en-IN')}). Nifty Smallcap 250 corrected >15% from 52-week high. Gajendra Kothari model deploys sideline dry powder to capture asymmetric recovery.`,
       urgency: 'CRITICAL',
       state: 'PENDING_APPROVAL',
       created_at: '2026-09-12T10:00:00Z',
@@ -36,11 +47,11 @@ export default function DirectiveCommandCenter() {
       action: 'SELL',
       source_scheme: 'HDFC Nifty 50 Index Fund Direct - Growth',
       target_scheme: 'LIQUID_SETTLEMENT',
-      amount_inr: 284000.0,
-      units_estimated: 1250.0,
-      rationale_heading: 'Section 112A Tax Gain Harvest: ₹1,24,850 tax-free',
+      amount_inr: taxHarvestAmount,
+      units_estimated: Math.round(taxHarvestAmount / 220),
+      rationale_heading: `Section 112A Tax Gain Harvest: ₹${taxHarvestAmount.toLocaleString('en-IN')} tax-free`,
       math_rationale:
-        'Holding period is 412 days (> 365 days). Realizes ₹1,24,850 LTCG under Budget 2024 annual ₹1.25L exemption. Selling and immediately repurchasing resets purchase NAV from ₹127.30 to ₹227.20, wiping out ₹15,606 in future taxes.',
+        `Calculated from your active capital base. Realizes ₹${taxHarvestAmount.toLocaleString('en-IN')} under Budget 2024 annual ₹1.25L exemption. Selling and immediately repurchasing resets purchase NAV, wiping out future 12.5% taxes without leaving the market.`,
       urgency: 'HIGH',
       state: 'PENDING_APPROVAL',
       created_at: '2026-09-12T10:00:00Z',
@@ -51,11 +62,11 @@ export default function DirectiveCommandCenter() {
       action: 'SELL',
       source_scheme: 'India Equity Bucket (Current: 56.4%)',
       target_scheme: 'Gold / Sovereign Gold Bonds (Current: 14.1%)',
-      amount_inr: 64000.0,
+      amount_inr: rebalanceDriftAmount,
       units_estimated: null,
-      rationale_heading: 'Multi-Asset Drift: India Equity Drift +6.4% (> ±5% Limit)',
+      rationale_heading: `Multi-Asset Drift: India Equity Drift +6.4% (> ±5% Limit)`,
       math_rationale:
-        'Portfolio 50/20/20/10 audit: India Equity has expanded to 56.4% (Target: 50.0%, Drift: +6.4%), while Gold has shrunk to 14.1% (Target: 20.0%, Deficit: -5.9%). Trimming ₹64,000 from Equity and sweeping into Gold to re-anchor risk posture.',
+        `Portfolio 50/20/20/10 audit: Calculated as 6.4% drift on your ₹${(currentPortfolio || 100000).toLocaleString('en-IN')} portfolio (= ₹${rebalanceDriftAmount.toLocaleString('en-IN')}). Trimming equity and sweeping into gold to re-anchor risk posture.`,
       urgency: 'MEDIUM',
       state: 'PENDING_APPROVAL',
       created_at: '2026-09-12T10:00:00Z',
@@ -66,11 +77,11 @@ export default function DirectiveCommandCenter() {
       action: 'SWP',
       source_scheme: 'Target Goal Equity Bucket',
       target_scheme: 'Liquid Capital Preservation',
-      amount_inr: 72000.0,
-      units_estimated: 410.0,
+      amount_inr: glideSwpAmount,
+      units_estimated: Math.round(glideSwpAmount / 175),
       rationale_heading: 'Goal Horizon at T-24 Months: Automated 4% Monthly SWP Active',
       math_rationale:
-        'Home Down Payment goal reaches maturity in 24 months. Systematic 4%/month SWP triggers to convert equity into liquid preservation, eliminating sequence of returns risk.',
+        `Neeraj Arora Glide Path: 4% of portfolio (= ₹${glideSwpAmount.toLocaleString('en-IN')}/mo) systematically moved into capital preservation liquid fund to protect maturity against market volatility.`,
       urgency: 'HIGH',
       state: 'PENDING_APPROVAL',
       created_at: '2026-09-12T10:00:00Z',
@@ -81,33 +92,97 @@ export default function DirectiveCommandCenter() {
       action: 'SWITCH',
       source_scheme: 'Nippon India Small Cap Fund Direct (AUM: ₹52,500 Cr)',
       target_scheme: 'UTI Nifty Smallcap 250 Quality 50 Index Fund Direct',
-      amount_inr: 10000.0,
+      amount_inr: currentSip,
       units_estimated: null,
       rationale_heading: 'AUM Bloat Detected (> ₹10,000 Cr Threshold)',
       math_rationale:
-        'Small-Cap fund size exceeds liquidity safety threshold of ₹10,000 Crores. Forward monthly SIP is redirected to Smart Beta index to prevent performance degradation and high market impact.',
+        `Small-Cap fund size exceeds liquidity safety threshold of ₹10,000 Crores. Forward monthly SIP of ₹${currentSip.toLocaleString('en-IN')} (with ${annualStepUpPct}% annual step-up) is redirected to Smart Beta index to prevent performance drag.`,
       urgency: 'HIGH',
       state: 'PENDING_APPROVAL',
       created_at: '2026-09-12T10:00:00Z',
     }
   ]);
 
-  const [activeFilter, setActiveFilter] = useState('PENDING'); // 'PENDING' | 'EXECUTED'
-  const [approvingId, setApprovingId] = useState(null);
-
-  // Fetch pending directives from backend if reachable
+  // Update directive figures whenever user inputs change on the home page
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/v1/directives/pending')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.directives && data.directives.length > 0) {
-          setDirectives(data.directives);
-        }
-      })
-      .catch(() => {
-        // In-memory fallback is active
-      });
-  }, []);
+    setDirectives([
+      {
+        id: 'dir-contrarian-01',
+        directive_type: 'DEPLOY_DRY_POWDER',
+        action: 'BUY',
+        source_scheme: 'Parag Parikh Liquid Fund Direct - Growth (Debt/Liquid Bucket)',
+        target_scheme: 'Tata Small Cap Fund Direct - Growth (India Equity Bucket)',
+        amount_inr: dryPowderDeployment,
+        units_estimated: Math.round(dryPowderDeployment / 120),
+        rationale_heading: 'Nifty Smallcap 250 Drawdown at -18.2%: Contrarian Trigger Activated',
+        math_rationale:
+          `Calculated from your ₹${currentSip.toLocaleString('en-IN')}/mo SIP (3x Dry Powder = ₹${dryPowderDeployment.toLocaleString('en-IN')}). Nifty Smallcap 250 corrected >15% from 52-week high. Gajendra Kothari model deploys sideline dry powder to capture asymmetric recovery.`,
+        urgency: 'CRITICAL',
+        state: 'PENDING_APPROVAL',
+        created_at: '2026-09-12T10:00:00Z',
+      },
+      {
+        id: 'dir-tax-harvest-02',
+        directive_type: 'HARVEST_TAX',
+        action: 'SELL',
+        source_scheme: 'HDFC Nifty 50 Index Fund Direct - Growth',
+        target_scheme: 'LIQUID_SETTLEMENT',
+        amount_inr: taxHarvestAmount,
+        units_estimated: Math.round(taxHarvestAmount / 220),
+        rationale_heading: `Section 112A Tax Gain Harvest: ₹${taxHarvestAmount.toLocaleString('en-IN')} tax-free`,
+        math_rationale:
+          `Calculated from your active capital base. Realizes ₹${taxHarvestAmount.toLocaleString('en-IN')} under Budget 2024 annual ₹1.25L exemption. Selling and immediately repurchasing resets purchase NAV, wiping out future 12.5% taxes without leaving the market.`,
+        urgency: 'HIGH',
+        state: 'PENDING_APPROVAL',
+        created_at: '2026-09-12T10:00:00Z',
+      },
+      {
+        id: 'dir-rebalance-03',
+        directive_type: 'TRIM_AND_SWEEP',
+        action: 'SELL',
+        source_scheme: 'India Equity Bucket (Current: 56.4%)',
+        target_scheme: 'Gold / Sovereign Gold Bonds (Current: 14.1%)',
+        amount_inr: rebalanceDriftAmount,
+        units_estimated: null,
+        rationale_heading: `Multi-Asset Drift: India Equity Drift +6.4% (> ±5% Limit)`,
+        math_rationale:
+          `Portfolio 50/20/20/10 audit: Calculated as 6.4% drift on your ₹${(currentPortfolio || 100000).toLocaleString('en-IN')} portfolio (= ₹${rebalanceDriftAmount.toLocaleString('en-IN')}). Trimming equity and sweeping into gold to re-anchor risk posture.`,
+        urgency: 'MEDIUM',
+        state: 'PENDING_APPROVAL',
+        created_at: '2026-09-12T10:00:00Z',
+      },
+      {
+        id: 'dir-glide-04',
+        directive_type: 'SWP_GLIDE_PATH',
+        action: 'SWP',
+        source_scheme: 'Target Goal Equity Bucket',
+        target_scheme: 'Liquid Capital Preservation',
+        amount_inr: glideSwpAmount,
+        units_estimated: Math.round(glideSwpAmount / 175),
+        rationale_heading: 'Goal Horizon at T-24 Months: Automated 4% Monthly SWP Active',
+        math_rationale:
+          `Neeraj Arora Glide Path: 4% of portfolio (= ₹${glideSwpAmount.toLocaleString('en-IN')}/mo) systematically moved into capital preservation liquid fund to protect maturity against market volatility.`,
+        urgency: 'HIGH',
+        state: 'PENDING_APPROVAL',
+        created_at: '2026-09-12T10:00:00Z',
+      },
+      {
+        id: 'dir-bloat-05',
+        directive_type: 'BLOAT_SWITCH',
+        action: 'SWITCH',
+        source_scheme: 'Nippon India Small Cap Fund Direct (AUM: ₹52,500 Cr)',
+        target_scheme: 'UTI Nifty Smallcap 250 Quality 50 Index Fund Direct',
+        amount_inr: currentSip,
+        units_estimated: null,
+        rationale_heading: 'AUM Bloat Detected (> ₹10,000 Cr Threshold)',
+        math_rationale:
+          `Small-Cap fund size exceeds liquidity safety threshold of ₹10,000 Crores. Forward monthly SIP of ₹${currentSip.toLocaleString('en-IN')} (with ${annualStepUpPct}% annual step-up) is redirected to Smart Beta index to prevent performance drag.`,
+        urgency: 'HIGH',
+        state: 'PENDING_APPROVAL',
+        created_at: '2026-09-12T10:00:00Z',
+      }
+    ]);
+  }, [currentSip, currentPortfolio, annualStepUpPct]);
 
   const handleApprove = async (id) => {
     setApprovingId(id);

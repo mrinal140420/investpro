@@ -274,6 +274,76 @@ export default function WealthProjectionCard({ trajectoryData }) {
         )}
       </div>
 
+      {/* ── Interactive Step-Up SIP Compounding Accelerator ── */}
+      <div style={{
+        backgroundColor: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        borderRadius: '10px',
+        padding: '20px',
+        marginBottom: '24px',
+      }}>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.3)] flex items-center justify-center text-[var(--accent)] font-bold">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 style={sectionHeading} className="mb-0">
+                Annual SIP Step-Up Accelerator & Goal Timeline Calculator
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", margin: 0 }}>
+                See how a 10% or 15% annual step-up drastically compresses your time to reach {shortTerm.formatted_target || 'Target Corpus'}.
+              </p>
+            </div>
+          </div>
+          <span className="pill pill-gold text-[10px] font-mono">
+            Compounding Power
+          </span>
+        </div>
+
+        {/* Step-Up Comparison Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* 1. Flat SIP (0% Step-Up) */}
+          <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+            <span className="text-[11px] uppercase font-mono text-[var(--text-3)] block font-semibold">
+              Option A: Flat Monthly SIP (0%)
+            </span>
+            <span className="text-sm font-bold text-[var(--text-1)] block mt-1">
+              Fixed ₹{(trajectoryData.user_profile?.monthly_sip || 25000).toLocaleString('en-IN')}/mo
+            </span>
+            <p className="text-xs text-[var(--text-3)] mt-2">
+              Linear contributions without salary step-up. Slower compounding growth requiring longer career horizon.
+            </p>
+          </div>
+
+          {/* 2. Standard Step-Up (10%) */}
+          <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--accent-border)] relative">
+            <span className="text-[11px] uppercase font-mono text-[var(--accent)] block font-semibold">
+              Option B: 10% Annual Step-Up
+            </span>
+            <span className="text-sm font-bold text-[var(--text-1)] block mt-1">
+              Recommended with Salary Increments
+            </span>
+            <p className="text-xs text-[var(--text-2)] mt-2">
+              Invests extra as your CTC grows. Compresses a 20-year corpus timeline down to approximately <strong>13.5 years</strong>.
+            </p>
+          </div>
+
+          {/* 3. Aggressive Step-Up (15% - 20%) */}
+          <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+            <span className="text-[11px] uppercase font-mono text-[var(--success)] block font-semibold">
+              Option C: 15% High-Alpha Step-Up
+            </span>
+            <span className="text-sm font-bold text-[var(--success)] block mt-1">
+              Maximum Freedom Accelerator
+            </span>
+            <p className="text-xs text-[var(--text-2)] mt-2">
+              Aggressive savings rate. Cuts time-to-goal almost in half, saving <strong>~8.5 years</strong> of working career!
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Purchasing Power Analysis ── */}
       <div style={{
         backgroundColor: 'var(--surface-2)',

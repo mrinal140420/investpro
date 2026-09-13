@@ -72,7 +72,7 @@ export default function InteractiveControlPanel({ params, setParams, onRecalcula
       </div>
 
       {/* Inputs Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-3">
 
         {/* Monthly SIP */}
         <FieldInput id="monthly-sip" label="Monthly SIP">
@@ -151,6 +151,19 @@ export default function InteractiveControlPanel({ params, setParams, onRecalcula
             value={params.current_ctc_lpa === 0 ? '' : params.current_ctc_lpa}
             onChange={e => handleChange('current_ctc_lpa', e.target.value)}
           />
+        </FieldInput>
+
+        {/* Annual SIP Step-Up */}
+        <FieldInput id="step-up-pct" label="Annual SIP Step-Up"
+          hint={`Increases SIP by ${Math.round((params.annual_step_up_pct || 0.10) * 100)}% every year with salary growth`}>
+          <select id="step-up-pct" value={params.annual_step_up_pct ?? 0.10}
+            onChange={e => handleChange('annual_step_up_pct', e.target.value)}>
+            <option value="0.0">0% (Flat SIP - No Step-Up)</option>
+            <option value="0.05">5% Annual Step-Up (Conservative)</option>
+            <option value="0.10">10% Annual Step-Up (Recommended)</option>
+            <option value="0.15">15% Annual Step-Up (Aggressive Career Growth)</option>
+            <option value="0.20">20% Annual Step-Up (High Accelerator)</option>
+          </select>
         </FieldInput>
 
         {/* Risk Strategy */}
