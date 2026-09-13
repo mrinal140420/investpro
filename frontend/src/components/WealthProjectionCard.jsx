@@ -49,7 +49,7 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export default function WealthProjectionCard({ trajectoryData }) {
+export default function WealthProjectionCard({ trajectoryData, onSelectStepUp, currentStepUp }) {
   const [inflationRate, setInflationRate] = useState(6.0);
   const [taxRate, setTaxRate] = useState(12.5);
 
@@ -86,6 +86,9 @@ export default function WealthProjectionCard({ trajectoryData }) {
   const maxCorpus = chartData.length > 0 ? Math.max(...chartData.map(d => d.corpusRaw)) : 10000000;
   const startYear = chartData.length > 0 ? chartData[0].year : new Date().getFullYear();
   const endYear   = chartData.length > 0 ? chartData[chartData.length - 1].year : startYear + 9;
+  const targetYear = trajectoryData.user_profile?.target_date
+    ? new Date(trajectoryData.user_profile.target_date).getFullYear()
+    : endYear;
 
   const grossRaw        = shortTerm.projected_short_fv || 1;
   const contributionsRaw = shortTerm.total_contributions || 0;
@@ -103,7 +106,29 @@ export default function WealthProjectionCard({ trajectoryData }) {
   const inflationLossPct = Math.min(100, Math.max(0, (inflationLossRaw / grossRaw) * 100));
   const realPowerPct    = Math.max(0, 100 - taxPct - inflationLossPct);
 
-  const dynamicNote = get_real_world_equivalent_note(realPower, endYear, postTaxCorpus);
+  const dynamicNote = get_real_world_equivalent_note(
+    Math.round(realPower),
+    targetYear,
+    Math.round(postTaxCorpus)
+  );
+
+  const simulateStepUpCorpus = (stepRate) => {
+    const sip = trajectoryData.user_profile?.monthly_sip || 25000;
+    const lump = trajectoryData.user_profile?.lump_sum || 0;
+    const months = shortTerm.months_remaining || 36;
+    const r_m = Math.pow(1 + 0.15, 1 / 12) - 1;
+    let c = lump;
+    let s = sip;
+    for (let m = 1; m <= months; m++) {
+      if (m > 1 && (m % 12 === 1)) s *= (1 + stepRate);
+      c = (c + s) * (1 + r_m);
+    }
+    return c;
+  };
+
+  const corpusAt0 = simulateStepUpCorpus(0.0);
+  const corpusAt10 = simulateStepUpCorpus(0.10);
+  const corpusAt15 = simulateStepUpCorpus(0.15);
 
   const yAxisFormatter = v => {
     if (maxCorpus >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`;
@@ -123,7 +148,7 @@ export default function WealthProjectionCard({ trajectoryData }) {
               Wealth Projection
             </h2>
             <p style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", marginTop: '2px' }}>
-              Target {shortTerm.formatted_target || '—'} by {endYear} · {shortTerm.years_remaining ? `${shortTerm.years_remaining} years remaining` : ''}
+              Target {shortTerm.formatted_target || '—'} by {targetYear} · {shortTerm.years_remaining ? `${shortTerm.years_remaining} years remaining` : ''}
             </p>
           </div>
         </div>
@@ -304,41 +329,103 @@ export default function WealthProjectionCard({ trajectoryData }) {
         {/* Step-Up Comparison Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* 1. Flat SIP (0% Step-Up) */}
-          <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-            <span className="text-[11px] uppercase font-mono text-[var(--text-3)] block font-semibold">
-              Option A: Flat Monthly SIP (0%)
-            </span>
+          <div 
+            onClick={() => onSelectStepUp && onSelectStepUp(0.0)}
+            className={`p-3.5 rounded-lg transition-all cursor-pointer ${
+              Math.abs((currentStepUp ?? 0.10) - 0.0) < 0.001
+                ? 'bg-[var(--surface)] border-2 border-[var(--gold)] shadow-md'
+                : 'bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent-border)]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase font-mono text-[var(--text-3)] block font-semibold">
+                Option A: Flat (0%)
+              </span>
+              {Math.abs((currentStepUp ?? 0.10) - 0.0) < 0.001 && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--gold)] text-black font-bold">ACTIVE</span>
+              )}
+            </div>
             <span className="text-sm font-bold text-[var(--text-1)] block mt-1">
               Fixed ₹{(trajectoryData.user_profile?.monthly_sip || 25000).toLocaleString('en-IN')}/mo
             </span>
-            <p className="text-xs text-[var(--text-3)] mt-2">
-              Linear contributions without salary step-up. Slower compounding growth requiring longer career horizon.
+            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
+              <span className="text-[11px] text-[var(--text-3)] block">Accumulates at deadline:</span>
+              <span className="text-sm font-mono font-bold text-[var(--text-2)]">{format_indian_currency(corpusAt0)}</span>
+            </div>
+            <p className="text-[11px] text-[var(--text-3)] mt-1.5">
+              Click to set 0% Flat SIP
             </p>
           </div>
 
           {/* 2. Standard Step-Up (10%) */}
-          <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--accent-border)] relative">
-            <span className="text-[11px] uppercase font-mono text-[var(--accent)] block font-semibold">
-              Option B: 10% Annual Step-Up
-            </span>
+          <div 
+            onClick={() => onSelectStepUp && onSelectStepUp(0.10)}
+            className={`p-3.5 rounded-lg transition-all cursor-pointer relative ${
+              Math.abs((currentStepUp ?? 0.10) - 0.10) < 0.001
+                ? 'bg-[var(--surface)] border-2 border-[var(--accent)] shadow-md'
+                : 'bg-[var(--surface)] border border-[var(--accent-border)] hover:border-[var(--accent)]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase font-mono text-[var(--accent)] block font-semibold">
+                Option B: 10% Step-Up (Rec)
+              </span>
+              {Math.abs((currentStepUp ?? 0.10) - 0.10) < 0.001 && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--accent)] text-black font-bold">ACTIVE</span>
+              )}
+            </div>
             <span className="text-sm font-bold text-[var(--text-1)] block mt-1">
-              Recommended with Salary Increments
+              +10% Annual Increment
             </span>
-            <p className="text-xs text-[var(--text-2)] mt-2">
-              Invests extra as your CTC grows. Compresses a 20-year corpus timeline down to approximately <strong>13.5 years</strong>.
+            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
+              <span className="text-[11px] text-[var(--text-3)] block">Accumulates at deadline:</span>
+              <span className="text-sm font-mono font-bold text-[var(--accent-bright)]">
+                {format_indian_currency(corpusAt10)}
+                {corpusAt10 > corpusAt0 && (
+                  <span className="text-[10px] text-emerald-400 ml-1 font-sans">
+                    (+{format_indian_currency(corpusAt10 - corpusAt0)})
+                  </span>
+                )}
+              </span>
+            </div>
+            <p className="text-[11px] text-[var(--text-2)] mt-1.5">
+              Click to set 10% Step-Up
             </p>
           </div>
 
-          {/* 3. Aggressive Step-Up (15% - 20%) */}
-          <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
-            <span className="text-[11px] uppercase font-mono text-[var(--success)] block font-semibold">
-              Option C: 15% High-Alpha Step-Up
-            </span>
+          {/* 3. Aggressive Step-Up (15%) */}
+          <div 
+            onClick={() => onSelectStepUp && onSelectStepUp(0.15)}
+            className={`p-3.5 rounded-lg transition-all cursor-pointer ${
+              Math.abs((currentStepUp ?? 0.10) - 0.15) < 0.001
+                ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md'
+                : 'bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] uppercase font-mono text-[var(--success)] block font-semibold">
+                Option C: 15% Accelerator
+              </span>
+              {Math.abs((currentStepUp ?? 0.10) - 0.15) < 0.001 && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-400 text-black font-bold">ACTIVE</span>
+              )}
+            </div>
             <span className="text-sm font-bold text-[var(--success)] block mt-1">
-              Maximum Freedom Accelerator
+              High Freedom Mode
             </span>
-            <p className="text-xs text-[var(--text-2)] mt-2">
-              Aggressive savings rate. Cuts time-to-goal almost in half, saving <strong>~8.5 years</strong> of working career!
+            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
+              <span className="text-[11px] text-[var(--text-3)] block">Accumulates at deadline:</span>
+              <span className="text-sm font-mono font-bold text-emerald-400">
+                {format_indian_currency(corpusAt15)}
+                {corpusAt15 > corpusAt0 && (
+                  <span className="text-[10px] text-emerald-300 ml-1 font-sans">
+                    (+{format_indian_currency(corpusAt15 - corpusAt0)})
+                  </span>
+                )}
+              </span>
+            </div>
+            <p className="text-[11px] text-[var(--text-2)] mt-1.5">
+              Click to set 15% Step-Up
             </p>
           </div>
         </div>

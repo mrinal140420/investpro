@@ -155,15 +155,53 @@ export default function InteractiveControlPanel({ params, setParams, onRecalcula
 
         {/* Annual SIP Step-Up */}
         <FieldInput id="step-up-pct" label="Annual SIP Step-Up"
-          hint={`Increases SIP by ${Math.round((params.annual_step_up_pct || 0.10) * 100)}% every year with salary growth`}>
-          <select id="step-up-pct" value={params.annual_step_up_pct ?? 0.10}
-            onChange={e => handleChange('annual_step_up_pct', e.target.value)}>
-            <option value="0.0">0% (Flat SIP - No Step-Up)</option>
+          hint={((params.annual_step_up_pct !== undefined && params.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10) === 0
+            ? '0% Flat SIP (No salary step-up applied)'
+            : `Increases SIP by ${Math.round(((params.annual_step_up_pct !== undefined && params.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10) * 100)}% every year with salary growth`}>
+          <select
+            id="step-up-pct"
+            value={((params.annual_step_up_pct !== undefined && params.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10).toFixed(2)}
+            onChange={e => handleChange('annual_step_up_pct', e.target.value)}
+          >
+            <option value="0.00">0% (Flat SIP - No Step-Up)</option>
             <option value="0.05">5% Annual Step-Up (Conservative)</option>
             <option value="0.10">10% Annual Step-Up (Recommended)</option>
             <option value="0.15">15% Annual Step-Up (Aggressive Career Growth)</option>
             <option value="0.20">20% Annual Step-Up (High Accelerator)</option>
+            <option value="0.25">25% Annual Step-Up (Super Aggressive)</option>
           </select>
+          <div style={{ display: 'flex', gap: '6px', marginTop: '7px' }}>
+            {[
+              { label: '0% Flat', val: 0.0 },
+              { label: '10% Rec', val: 0.10 },
+              { label: '15% High', val: 0.15 },
+              { label: '20% Max', val: 0.20 }
+            ].map(s => {
+              const currentVal = (params.annual_step_up_pct !== undefined && params.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10;
+              const isSelected = Math.abs(currentVal - s.val) < 0.001;
+              return (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => handleChange('annual_step_up_pct', s.val)}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: isSelected ? '700' : '500',
+                    color: isSelected ? '#111827' : 'var(--accent-bright)',
+                    background: isSelected ? 'var(--gold)' : 'var(--accent-glow)',
+                    border: `1px solid ${isSelected ? 'var(--gold)' : 'var(--accent-border)'}`,
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif",
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
         </FieldInput>
 
         {/* Risk Strategy */}

@@ -366,7 +366,11 @@ export default function App() {
                 </div>
               ) : (
                 <div id="results-grid" className="grid grid-cols-12 gap-6 scroll-mt-6">
-                  <WealthProjectionCard trajectoryData={trajectoryData} />
+                  <WealthProjectionCard 
+                    trajectoryData={trajectoryData} 
+                    currentStepUp={params.annual_step_up_pct}
+                    onSelectStepUp={(val) => setParams(prev => ({ ...prev, annual_step_up_pct: val }))}
+                  />
                   <RecommendedPortfolioCard 
                     fundUniverse={fundUniverse} 
                     monthlySip={params.monthly_investable_sip}

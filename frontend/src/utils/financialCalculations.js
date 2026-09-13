@@ -846,7 +846,10 @@ export function calculateTrajectoryAnalysis(currentParams = {}) {
   const sip = currentParams.monthly_investable_sip || 25000;
   const lump = currentParams.lump_sum_amount || 0;
   const ctc = currentParams.current_ctc_lpa || 12;
-  const stepUp = currentParams.annual_step_up_pct ?? 0.10;
+  const rawStepUp = currentParams.annual_step_up_pct;
+  const stepUp = (rawStepUp !== undefined && rawStepUp !== null && rawStepUp !== '' && !isNaN(Number(rawStepUp)))
+    ? parseFloat(rawStepUp)
+    : 0.10;
   const target = currentParams.near_target_amount || 5000000;
   const targetDate = new Date(currentParams.near_target_date || '2028-12-31');
   const today = new Date();
