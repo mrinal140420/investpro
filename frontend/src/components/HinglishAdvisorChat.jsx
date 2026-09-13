@@ -4,7 +4,9 @@ import { format_indian_currency } from '../utils/formatters.js';
 import { generateFinBhaiResponse } from '../utils/financialCalculations.js';
 
 const QUICK_PROMPTS = [
-  "Bhai, mera plan sahi hai ya nahi explain karo?",
+  "Kya yeh target sambhav hai jo maine set kiya hai?",
+  "Bhai, mera plan kesa hai review karo?",
+  "Itne me kya hi hoga (₹300 SIP se kya banega)?",
   "10% Step-Up SIP se mujhe kitna extra wealth milega?",
   "S&P 500 Index FoF hamare portfolio me kyu zaroori hai?",
   "Budget 2024 Section 112A tax harvesting kaise karein?",
@@ -66,12 +68,12 @@ export default function HinglishAdvisorChat({ params, fundUniverse, trajectoryDa
     setLoading(true);
 
     const portfolioContext = {
-      monthly_sip: params?.monthly_investable_sip || 25000.0,
-      lump_sum: params?.lump_sum_amount || 0.0,
-      target_amount: params?.near_target_amount || 5000000.0,
+      monthly_sip: (params?.monthly_investable_sip !== undefined && params?.monthly_investable_sip !== null && !isNaN(Number(params.monthly_investable_sip))) ? Number(params.monthly_investable_sip) : 25000.0,
+      lump_sum: (params?.lump_sum_amount !== undefined && params?.lump_sum_amount !== null && !isNaN(Number(params.lump_sum_amount))) ? Number(params.lump_sum_amount) : 0.0,
+      target_amount: (params?.near_target_amount !== undefined && params?.near_target_amount !== null && !isNaN(Number(params.near_target_amount))) ? Number(params.near_target_amount) : 5000000.0,
       target_date: params?.near_target_date || '2031-12-31',
-      annual_step_up_pct: (params?.annual_step_up_pct !== undefined && params?.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10,
-      ctc_lpa: params?.current_ctc_lpa || 12.0,
+      annual_step_up_pct: (params?.annual_step_up_pct !== undefined && params?.annual_step_up_pct !== null && !isNaN(Number(params.annual_step_up_pct))) ? Number(params.annual_step_up_pct) : 0.10,
+      ctc_lpa: (params?.current_ctc_lpa !== undefined && params?.current_ctc_lpa !== null && !isNaN(Number(params.current_ctc_lpa))) ? Number(params.current_ctc_lpa) : 12.0,
       risk_mode: params?.risk_mode || 'global_multi_asset',
       projected_corpus: trajectoryData?.short_term_target?.projected_short_fv || null,
       verdict: trajectoryData?.short_term_target?.verdict || null
