@@ -4,6 +4,7 @@ import {
   scanTaxHarvesting,
   calculateMilestones,
   calculateTrajectoryAnalysis,
+  generateFinBhaiResponse,
 } from '../src/utils/financialCalculations.js';
 
 const PRO_PICKS = [
@@ -196,14 +197,13 @@ export default async function handler(req, res) {
     // 9. /v1/chat/hinglish-advisor
     if (pathname.includes('/chat/hinglish-advisor')) {
       const userMsg = body.message || '';
+      const ctx = body.portfolio_context || {};
+      const replyText = generateFinBhaiResponse(userMsg, ctx);
       return res.status(200).json({
-        response: `Namaste! Aapka monthly SIP plan aur 50/30/10/10 factor barbell allocation bilkul active hai. Direct plans ke through aapka compounding return 15-17% target ke path par hai. Agar aapko kisi fund me switch ya annual step-up karna hai, toh aap directly slider adjust kar sakte hain!`,
-        detected_intent: "PORTFOLIO_CHECK",
-        actionable_steps: [
-          "Annual 10% Step-Up maintain karein",
-          "Section 112A ke under ₹1.25L tax harvest plan karein",
-          "Tata Small Cap me AUM bloat monitor karte rahein"
-        ]
+        reply: replyText,
+        response: replyText,
+        status: "success",
+        source: "finbhai_sebi_ria_engine"
       });
     }
 

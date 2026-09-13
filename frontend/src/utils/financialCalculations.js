@@ -929,3 +929,168 @@ export function calculateTrajectoryAnalysis(currentParams = {}) {
   };
 }
 
+/**
+ * Intelligent SEBI RIA Hinglish Financial Advisor DSS
+ * Fully grounded in user's active portfolio plan, SIP, target, and step-up numbers.
+ */
+export function generateFinBhaiResponse(query = '', context = {}) {
+  const q = (query || '').toLowerCase().trim();
+  const qClean = q.replace(/(\d+)\s*(cr|crore|lakh|k)/g, '$1 $2');
+
+  const sip = parseFloat(context.monthly_sip) || 25000.0;
+  const lump = parseFloat(context.lump_sum) || 0.0;
+  const target = parseFloat(context.target_amount) || 5000000.0;
+  const targetDate = context.target_date || '2031-12-31';
+  const targetYear = new Date(targetDate).getFullYear() || 2031;
+  const stepUpPct = context.annual_step_up_pct !== undefined ? parseFloat(context.annual_step_up_pct) : 0.10;
+  const ctcLpa = parseFloat(context.ctc_lpa) || 12.0;
+
+  const today = new Date();
+  const targetDt = new Date(targetDate);
+  const monthsRemaining = Math.max(1, Math.round((targetDt - today) / (1000 * 60 * 60 * 24 * 30.4375)));
+  const yearsRemaining = (monthsRemaining / 12.0).toFixed(1);
+
+  // 14.5% blended CAGR
+  const r_m = Math.pow(1 + 0.145, 1 / 12) - 1;
+  let simulatedCorpus = lump;
+  let curSip = sip;
+  let totalSelfInvested = lump;
+  for (let m = 1; m <= monthsRemaining; m++) {
+    if (m > 1 && (m % 12 === 1)) curSip *= (1 + stepUpPct);
+    simulatedCorpus = (simulatedCorpus + curSip) * (1 + r_m);
+    totalSelfInvested += curSip;
+  }
+
+  // 1. IS MY PLAN RIGHT? / PLAN AUDIT / WHAT IS CORRECT AND WHAT IS RIGHT?
+  if (q.includes('right') || q.includes('correct') || q.includes('sahi') || q.includes('galat') || q.includes('plan kaisa') || q.includes('plan review') || q.includes('my plan') || q.includes('planning') || q.includes('explain') || q.includes('stick') || q.includes('kya sahi') || q.includes('guide')) {
+    const isTargetAchievable = simulatedCorpus >= target;
+    return `**Namaste! Main aapka SEBI-Registered Investment Advisor (RIA) level FinBhai Copilot hoon 🏛️.**
+
+Aapke active investment plan ka complete fiduciary audit yeh raha:
+
+### 📋 Aapka Current Plan & Trajectory:
+• **Monthly SIP:** ${format_indian_currency(sip)}/mo (with ${Math.round(stepUpPct * 100)}% Annual Step-Up)
+• **Initial Lump Sum:** ${format_indian_currency(lump)}
+• **Target Goal:** ${format_indian_currency(target)} by ${targetYear} (${yearsRemaining} Saal baaki)
+• **Aapka Total Self-Investment:** ~${format_indian_currency(totalSelfInvested)}
+• **Expected Wealth at Deadline (14.5% CAGR):** **~${format_indian_currency(simulatedCorpus)}**
+
+${isTargetAchievable 
+  ? `✅ **VERDICT: ON TRACK!** 
+Aapka ${format_indian_currency(sip)}/mo SIP aur ${Math.round(stepUpPct * 100)}% step-up mathematically ${targetYear} tak **${format_indian_currency(simulatedCorpus)}** accumulate karega, jo aapke ${format_indian_currency(target)} target ko aasaani se achieve kar lega!`
+  : `⚠️ **VERDICT: TIMELINE REALITY CHECK!** 
+${yearsRemaining} saal me ${format_indian_currency(target)} tak pahunchne ke liye aapko thoda sa adjustment chahiye. Current pace se aap **${format_indian_currency(simulatedCorpus)}** tak pahunchenge (~${format_indian_currency(target - simulatedCorpus)} shortfall).`}
+
+### 🎯 What is Correct & What is Right (Fiduciary Advice):
+1. **${stepUpPct === 0 ? 'Annual Step-Up Enable Karein:' : 'Step-Up Discipline Maintain Karein:'}**
+   • ${stepUpPct === 0 ? 'Aapka step-up currently 0% par hai. Salary increment aate hi har saal 10% ya 15% SIP badhao — isse compounding time 35% reduce ho jata hai!' : `Aapka ${Math.round(stepUpPct * 100)}% step-up plan perfect hai. Is discipline ko strictly locked rakhein.`}
+2. **100% Direct Mutual Funds Only:** 
+   • Regular plans me 1.0%-1.5% annual distributor commission kat jata hai, jo 20 saal me ₹30 Lakhs+ ka leakage karta hai. Groww direct growth plans me 0% commission leakage hai.
+3. **Barbell Factor Allocation:**
+   • Tata Small Cap (25%) + Motilal S&P 500 (20%) + UTI Momentum 30 (20%) + HDFC Nifty 50 (20%) + Nippon Silver FoF (15%). Yeh basket domestic growth, tech monopolies, aur inflation defense ko perfectly balance karti hai!`;
+  }
+
+  // 2. STEP-UP SIP
+  if (q.includes('step') || q.includes('stepup') || q.includes('step-up')) {
+    let flatCorpus = lump;
+    let sFlat = sip;
+    for (let m = 1; m <= monthsRemaining; m++) {
+      flatCorpus = (flatCorpus + sFlat) * (1 + r_m);
+    }
+    const extraGain = Math.max(0, simulatedCorpus - flatCorpus);
+
+    return `**Bhai, Step-Up SIP wealth compounding ka sabse bada secret weapon hai! 🚀**
+
+### 📊 Aapke Numbers par Step-Up ka Asli Magic:
+• **Option A — Flat SIP (0% Step-Up):**
+  - Har mahine fixed ${format_indian_currency(sip)}
+  - ${targetYear} tak banega: **~${format_indian_currency(flatCorpus)}**
+
+• **Option B — Aapka Selected (${Math.round(stepUpPct * 100)}% Annual Step-Up):**
+  - Har saal salary increment ke sath SIP badhega
+  - ${targetYear} tak banega: **~${format_indian_currency(simulatedCorpus)}**
+  - **Extra Wealth Created:** **+${format_indian_currency(extraGain)}** bina extra principal load ke!
+
+💡 **FinBhai Rule:** Agar aap flat SIP rakhoge toh inflation aapke real returns kha jayegi. Har saal apna SIP kam se kam 10% step-up zaroor karein!`;
+  }
+
+  // 3. TARGET CORPUS & 1 CRORE / WEALTH BLUEPRINT
+  if (qClean.includes('1 crore') || qClean.includes('1 cr') || qClean.includes('crore') || qClean.includes('50 lakh') || q.includes('target') || q.includes('corpus')) {
+    return `**Bhai, '${format_indian_currency(target)}' target build karna ek mechanical process hai, koi speculative gamble nahi! 🏆**
+
+### 📈 Aapke Current Portfolio se Roadmap:
+• **Current SIP:** ${format_indian_currency(sip)}/mo (with ${Math.round(stepUpPct * 100)}% Step-Up)
+• **Target Deadline:** ${targetYear} (${yearsRemaining} Years Remaining)
+• **Projected Accumulation:** **~${format_indian_currency(simulatedCorpus)}** (14.5% Multi-Asset Barbell CAGR)
+
+### ⚡ Wealth Accelerate Karne ke 3 Fiduciary Rules:
+1. **Contrarian Drawdown Deployment:** Jab market 15%-20% correct ho, Parag Parikh Liquid Fund se sideline dry powder deploy karein.
+2. **Section 112A Tax Harvesting:** Har saal Feb-March me ₹1.25 Lakhs tak ka LTCG tax-free harvest karein.
+3. **Never Pause in Bear Markets:** Real generational wealth bear market ke saste NAV accumulation se hi banti hai!`;
+  }
+
+  // 4. S&P 500 & US GLOBAL ASSETS
+  if (q.includes('sp 500') || q.includes('s&p') || q.includes('us') || q.includes('global') || q.includes('motilal')) {
+    return `**Bhai, Motilal Oswal S&P 500 Index FoF hamare portfolio ka sabse zaroori Global Pillar hai! 🇺🇸**
+
+1. **Natural USD Currency Alpha:**
+   • Indian Rupee USD ke mukable har saal ~3.5% to 4.2% depreciate hota hai. S&P 500 me invest karke aapko US index returns + currency depreciation dono ka double compounding milta hai!
+2. **Global Monopoly Moats:**
+   • Apple, Microsoft, Nvidia, Google, Meta, Amazon — yeh companies global cash cows hain aur Indian stock market me available nahi hain.
+3. **Rock-Bottom TER (0.50%):**
+   • Active global funds 1.8%-2.2% expense ratio charge karte hain, jabki yeh direct index fund aapko pure exposure deta hai.`;
+  }
+
+  // 5. TAX HARVESTING (SECTION 112A)
+  if (q.includes('tax') || q.includes('112a') || q.includes('ltcg') || q.includes('harvest') || q.includes('bachaye')) {
+    return `**Budget 2024 Section 112A Tax Harvesting Rule:**
+
+• **₹1.25 Lakhs Tax-Free Exemption:** Har financial year (April 1 to March 31) equity mutual funds par ₹1.25 Lakh tak ka Long-Term Capital Gains (LTCG) **100% Tax-Free** hota hai. Uske upar 12.5% tax lagta hai.
+• **Action Plan:** Har saal Jan–March me ₹1.25L tak ka profit redeem karke agle din direct growth plan me wapas daal do.
+• **Permanent Saving:** Is step-up of acquisition cost se aap har saal **₹15,625 direct cash tax** permanently bacha lete hain!`;
+  }
+
+  // 6. MARKET CRASH & DRAWDOWN STRESS
+  if (q.includes('crash') || q.includes('drawdown') || q.includes('gir') || q.includes('risk') || q.includes('loss')) {
+    return `**Market Crash (15%-20% Drawdown) me InvestPro Engine kya karta hai? 📉➡️🚀**
+
+• **Contrarian Overlay (Gajendra Kothari Model):**
+  - Jab Nifty ya Small Cap 15%-20% apne peak se girti hai, emotional log darr kar bech dete hain.
+  - InvestPro automatically aapke Parag Parikh Liquid Fund ki sideline dry powder ko deploy karne ka signal deta hai.
+• **Asymmetric Downside Capture:**
+  - Tata Small Cap ka downside capture sirf 68% hai — matlab jab market 100 girta hai, yeh sirf 68 girta hai, par bull market me 112% participate karta hai!`;
+  }
+
+  // 7. TOUGH SITUATION / LOW SALARY / DEBT
+  if (q.includes('halat') || q.includes('kharab') || q.includes('gareeb') || q.includes('paise nahi') || q.includes('struggle') || q.includes('tension') || q.includes('low salary') || q.includes('kam salary') || q.includes('karz') || q.includes('debt')) {
+    return `**Bhai, sabse pehle tension chhod do. Maximum log jinhone ₹1 Crore banaya hai, unki shuruat 'kam salary' se hi hui thi! 🤝❤️**
+
+### 🚀 Aapka Zero-Se-Hero Action Plan:
+1. **Start with Whatever You Have (Even ₹1,000/mo):**
+   • Shuruat me amount matter nahi karta, **investing habit aur discipline** matter karta hai.
+2. **The 15% Step-Up Miracle:**
+   • Jaise-jaise salary badhegi, har saal SIP sirf 15% badhate jao. Sirf ₹1,000/mo SIP (15% Step-Up) se 15 saal me **~₹25 Lakhs** aur 20 saal me **₹1 Crore+** ban jata hai!
+3. **Emergency Shield First:**
+   • Pehle ₹20k–₹30k Parag Parikh Liquid Fund me rakho taaki koi choti emergency par karz na lena pade.
+4. **Stick to the 5-Fund Direct Barbell:**
+   • Tata Small Cap (25%) + Motilal S&P 500 (20%) + UTI Momentum 30 (20%) + HDFC Nifty 50 (20%) + Silver FoF (15%).`;
+  }
+
+  // 8. DEFAULT HOLISTIC SEBI RIA RESPONSE GROUNDED IN USER PLAN
+  return `**Namaste! Main aapka SEBI RIA-Level AI Copilot FinBhai hoon 🤖.**
+
+Aapka active portfolio status:
+• **Monthly SIP:** ${format_indian_currency(sip)}/mo (with ${Math.round(stepUpPct * 100)}% Annual Step-Up)
+• **Target Goal:** ${format_indian_currency(target)} by ${targetYear} (${yearsRemaining} Yrs)
+• **Projected Corpus:** **~${format_indian_currency(simulatedCorpus)}** (Self-Invested: ~${format_indian_currency(totalSelfInvested)})
+• **Strategy:** 25% Tata Small Cap + 20% Motilal S&P 500 + 20% UTI Momentum 30 + 20% HDFC Nifty 50 + 15% Nippon Silver FoF
+
+Aap mujhse pooch sakte hain:
+• *'Mera plan sahi hai ya nahi?'*
+• *'10% Step-up se kitna extra corpus banega?'*
+• *'S&P 500 FoF kyu zaroori hai?'*
+• *'Section 112A tax kaise bachayein?'*
+• *'Market crash me portfolio kaise react karega?'*`;
+}
+
+

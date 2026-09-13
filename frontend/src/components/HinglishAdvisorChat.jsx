@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Send, Bot, User, Sparkles, X, Key, ShieldCheck, HelpCircle, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
-import { format_indian_currency } from '../utils/formatters';
+import { format_indian_currency } from '../utils/formatters.js';
+import { generateFinBhaiResponse } from '../utils/financialCalculations.js';
 
 const QUICK_PROMPTS = [
-  "Bhai, S&P 500 FoF kyu zaroori hai?",
-  "10% Step-up SIP se wealth pe kitna fark padega?",
-  "Section 112A tax harvesting kaise kaam karti hai?",
-  "Emergency fund ke liye Liquid Fund vs Bank FD me kya better hai?",
-  "Market crash hua toh mera portfolio kaise react karega?"
+  "Bhai, mera plan sahi hai ya nahi explain karo?",
+  "10% Step-Up SIP se mujhe kitna extra wealth milega?",
+  "S&P 500 Index FoF hamare portfolio me kyu zaroori hai?",
+  "Budget 2024 Section 112A tax harvesting kaise karein?",
+  "Market crash me mera portfolio kaise react karega?",
+  "Emergency fund: Liquid Fund vs Bank FD me kya right hai?"
 ];
 
-export default function HinglishAdvisorChat({ params, fundUniverse }) {
+export default function HinglishAdvisorChat({ params, fundUniverse, trajectoryData }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -63,59 +65,92 @@ export default function HinglishAdvisorChat({ params, fundUniverse }) {
     setInputMessage('');
     setLoading(true);
 
-    try {
-      const res = await fetch('/api/v1/chat/hinglish-advisor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: query,
-          portfolio_context: {
-            monthly_sip: params?.monthly_investable_sip || 25000.0,
-            lump_sum: params?.lump_sum_amount || 0.0,
-            target_amount: params?.near_target_amount || 5000000.0,
-            target_date: params?.near_target_date || '2028-12-31',
-            ctc_lpa: params?.current_ctc_lpa || 12.0,
-            risk_mode: params?.risk_mode || 'global_multi_asset'
-          },
-          conversation_history: messages.slice(-6),
-          custom_gemini_key: geminiApiKey || null
-        })
-      });
+    const portfolioContext = {
+      monthly_sip: params?.monthly_investable_sip || 25000.0,
+      lump_sum: params?.lump_sum_amount || 0.0,
+      target_amount: params?.near_target_amount || 5000000.0,
+      target_date: params?.near_target_date || '2031-12-31',
+      annual_step_up_pct: (params?.annual_step_up_pct !== undefined && params?.annual_step_up_pct !== null) ? Number(params.annual_step_up_pct) : 0.10,
+      ctc_lpa: params?.current_ctc_lpa || 12.0,
+      risk_mode: params?.risk_mode || 'global_multi_asset',
+      projected_corpus: trajectoryData?.short_term_target?.projected_short_fv || null,
+      verdict: trajectoryData?.short_term_target?.verdict || null
+    };
 
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(prev => [
-          ...prev,
-          {
-            sender: 'bot',
-            text: data.reply,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            source: data.source
-          }
-        ]);
-      } else {
-        setMessages(prev => [
-          ...prev,
-          {
-            sender: 'bot',
-            text: "Bhai, network me thoda issue lag raha hai. Par aapka portfolio track par hai! Thodi der baad try karo.",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-      }
-    } catch (err) {
-      console.error('Chat error:', err);
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: "Bhai, connection timeout hua. Please check your internet or retry!",
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    let botReply = '';
+    let replySource = 'finbhai_sebi_ria_engine';
+
+    // 1. Direct browser Gemini API call if custom key provided
+    if (geminiApiKey) {
+      try {
+        const prompt = `You are FinBhai, an empathetic, mathematically rigorous SEBI-Registered Investment Advisor (RIA) level Digital Family Office Copilot for InvestPro.
+Tone: Energetic, clear, high-conviction Hinglish (Hindi + English) with bold numbers and bullet points.
+User Active Portfolio:
+- Monthly SIP: ₹${Number(portfolioContext.monthly_sip).toLocaleString('en-IN')}/mo
+- Lump Sum: ₹${Number(portfolioContext.lump_sum).toLocaleString('en-IN')}
+- Target Amount: ₹${(Number(portfolioContext.target_amount) / 100000).toFixed(2)} Lakhs by ${portfolioContext.target_date}
+- Annual SIP Step-Up: ${Math.round(portfolioContext.annual_step_up_pct * 100)}%
+- Annual CTC: ₹${portfolioContext.ctc_lpa} LPA
+- Barbell Allocation: 25% Tata Small Cap (Agile AUM) + 20% Motilal S&P 500 FoF (US USD Hedge) + 20% UTI Momentum 30 (Factor Alpha) + 20% HDFC Nifty 50 (Core Anchor) + 15% Nippon Silver FoF (Crisis Defense).
+User Question: "${query}"
+Give practical, fiduciary, and encouraging advice strictly grounded in the user's plan:`;
+
+        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey.trim()}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          botReply = gData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (botReply) replySource = 'gemini_cloud';
         }
-      ]);
-    } finally {
-      setLoading(false);
+      } catch (err) {
+        console.warn('Direct Gemini call failed, falling back to DSS:', err);
+      }
     }
+
+    // 2. Try Backend Edge Serverless API
+    if (!botReply) {
+      try {
+        const res = await fetch('/api/v1/chat/hinglish-advisor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: query,
+            portfolio_context: portfolioContext,
+            conversation_history: messages.slice(-6)
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          botReply = data.reply || data.response || data.message;
+          if (data.source) replySource = data.source;
+        }
+      } catch (err) {
+        console.warn('API call error, falling back to local DSS:', err);
+      }
+    }
+
+    // 3. Guaranteed Deterministic SEBI RIA Local DSS Fallback
+    if (!botReply) {
+      botReply = generateFinBhaiResponse(query, portfolioContext);
+    }
+
+    setMessages(prev => [
+      ...prev,
+      {
+        sender: 'bot',
+        text: botReply || 'Bhai, aapka investment plan active aur track par hai!',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        source: replySource
+      }
+    ]);
+    setLoading(false);
   };
 
   return (
@@ -224,7 +259,7 @@ export default function HinglishAdvisorChat({ params, fundUniverse }) {
                       : 'bg-[var(--surface-2)] text-[var(--text-1)] border border-[var(--border)] rounded-bl-none shadow-sm'
                   }`}
                 >
-                  <div dangerouslySetInnerHTML={{ __html: m.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                  <div dangerouslySetInnerHTML={{ __html: (m.text || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                   <span className={`text-[9px] block mt-1 text-right font-mono ${m.sender === 'user' ? 'text-white/70' : 'text-[var(--text-3)]'}`}>
                     {m.time}
                   </span>

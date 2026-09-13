@@ -417,7 +417,7 @@ export default function App() {
           />
 
           {/* Hinglish AI Financial Advisor Chatbot */}
-          <HinglishAdvisorChat params={params} fundUniverse={fundUniverse} />
+          <HinglishAdvisorChat params={params} fundUniverse={fundUniverse} trajectoryData={trajectoryData} />
         </main>
       </div>
     </ErrorBoundary>
