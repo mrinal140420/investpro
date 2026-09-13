@@ -13,6 +13,7 @@ import BehavioralShield from './components/BehavioralShield';
 import DirectiveCommandCenter from './components/DirectiveCommandCenter';
 import CasUploadModal from './components/CasUploadModal';
 import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock } from 'lucide-react';
+import { getEnrichedFundUniverse } from './utils/financialCalculations';
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
@@ -262,71 +263,12 @@ export default function App() {
       if (fundRes && fundRes.ok) {
         setFundUniverse(await fundRes.json());
       } else {
-        // Fallback default Direct mutual fund barbell allocations
-        setFundUniverse({
-          total_monthly_sip: currentParams.monthly_investable_sip,
-          total_lump_sum: currentParams.lump_sum_amount,
-          risk_mode: currentParams.risk_mode,
-          portfolio_weighted_5y_cagr: 21.2,
-          formatted_total_annual_growth: `+₹${Math.round((currentParams.monthly_investable_sip * 12) * 0.212).toLocaleString('en-IN')}/yr`,
-          asset_breakdown: [
-            {
-              asset_class: "Small Cap Alpha (India)",
-              allocation_pct: 25.0,
-              fund_name: "Tata Small Cap Fund Direct Growth",
-              return_5y_cagr: 28.2,
-              risk_level: "Very High",
-              goal_impact_role: "Domestic High-Alpha Multiplier",
-              allocated_sip: currentParams.monthly_investable_sip * 0.25,
-              formatted_sip: `₹${Math.round(currentParams.monthly_investable_sip * 0.25).toLocaleString('en-IN')}`,
-              groww_url: "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth",
-            },
-            {
-              asset_class: "US S&P 500 Index FoF (Global)",
-              allocation_pct: 20.0,
-              fund_name: "Motilal Oswal S&P 500 Index Fund Direct Growth",
-              return_5y_cagr: 18.6,
-              risk_level: "Moderate-High",
-              goal_impact_role: "Global Geographic Diversification & USD Hedge",
-              allocated_sip: currentParams.monthly_investable_sip * 0.20,
-              formatted_sip: `₹${Math.round(currentParams.monthly_investable_sip * 0.20).toLocaleString('en-IN')}`,
-              groww_url: "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth",
-            },
-            {
-              asset_class: "Momentum 30 Factor ETF (India)",
-              allocation_pct: 20.0,
-              fund_name: "UTI Nifty 200 Momentum 30 Index Fund",
-              return_5y_cagr: 21.4,
-              risk_level: "High",
-              goal_impact_role: "Trend-Following Factor Accelerator",
-              allocated_sip: currentParams.monthly_investable_sip * 0.20,
-              formatted_sip: `₹${Math.round(currentParams.monthly_investable_sip * 0.20).toLocaleString('en-IN')}`,
-              groww_url: "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth",
-            },
-            {
-              asset_class: "Nifty 50 Index Fund (India)",
-              allocation_pct: 20.0,
-              fund_name: "HDFC Nifty 50 Index Fund Direct Growth",
-              return_5y_cagr: 14.8,
-              risk_level: "Moderate",
-              goal_impact_role: "Domestic Core Market Compounder",
-              allocated_sip: currentParams.monthly_investable_sip * 0.20,
-              formatted_sip: `₹${Math.round(currentParams.monthly_investable_sip * 0.20).toLocaleString('en-IN')}`,
-              groww_url: "https://groww.in/mutual-funds/hdfc-nifty-50-index-fund-direct-growth",
-            },
-            {
-              asset_class: "Silver & Gold ETF FoF (Commodity)",
-              allocation_pct: 15.0,
-              fund_name: "Nippon India Silver ETF FoF Direct Growth",
-              return_5y_cagr: 16.5,
-              risk_level: "Moderate",
-              goal_impact_role: "Inflation Defense & Crisis Shield",
-              allocated_sip: currentParams.monthly_investable_sip * 0.15,
-              formatted_sip: `₹${Math.round(currentParams.monthly_investable_sip * 0.15).toLocaleString('en-IN')}`,
-              groww_url: "https://groww.in/mutual-funds/nippon-india-silver-etf-fof-direct-growth",
-            },
-          ]
-        });
+        // High-precision Client-side Mathematical Research Fallback
+        setFundUniverse(getEnrichedFundUniverse(
+          currentParams.monthly_investable_sip,
+          currentParams.lump_sum_amount,
+          currentParams.risk_mode
+        ));
       }
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -516,7 +458,12 @@ export default function App() {
               ) : (
                 <div id="results-grid" className="grid grid-cols-12 gap-6 scroll-mt-6">
                   <WealthProjectionCard trajectoryData={trajectoryData} />
-                  <RecommendedPortfolioCard fundUniverse={fundUniverse} />
+                  <RecommendedPortfolioCard 
+                    fundUniverse={fundUniverse} 
+                    monthlySip={params.monthly_investable_sip}
+                    lumpSum={params.lump_sum_amount}
+                    riskMode={params.risk_mode}
+                  />
                   <RiskMonitorsCard circuitData={null} aumData={null} />
                   <ExecutionDirectivesFeed fundUniverse={fundUniverse} />
                 </div>
@@ -526,7 +473,7 @@ export default function App() {
 
           {/* Tab 2: Behavioral Shield & Locked Goals */}
           {activeTab === 'behavioral_shield' && (
-            <BehavioralShield />
+            <BehavioralShield userParams={params} />
           )}
 
           {/* Tab 3: Directive Command Center (Approval Queue) */}
@@ -536,7 +483,7 @@ export default function App() {
 
           {/* Tab 4: Emergency Shield & Lifestyle Goal Slicer */}
           {activeTab === 'reverse_emi' && (
-            <GoalSlicingCard />
+            <GoalSlicingCard userParams={params} />
           )}
 
           {/* Tab 5: Section 112A Tax Savings & 1% Freedom Index */}

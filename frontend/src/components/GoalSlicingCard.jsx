@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, ShieldCheck, Zap, ExternalLink, PiggyBank, CreditCard, Sparkles, CheckCircle2, AlertCircle, ArrowUpRight, Clock, HelpCircle } from 'lucide-react';
 import { format_indian_currency } from '../utils/formatters';
+import { calculateGoalPlan } from '../utils/financialCalculations';
 
 const PRESET_GOALS = [
   { name: 'MacBook Pro / Tech Upgrade', amount: 180000, months: 10 },
@@ -10,7 +11,7 @@ const PRESET_GOALS = [
   { name: 'Dream Home Down Payment', amount: 3000000, months: 48 },
 ];
 
-export default function GoalSlicingCard() {
+export default function GoalSlicingCard({ userParams }) {
   const [goalName, setGoalName] = useState('Wedding / Big Event Fund');
   const [targetAmount, setTargetAmount] = useState(1500000);
   const [targetMonths, setTargetMonths] = useState(36);
@@ -20,6 +21,18 @@ export default function GoalSlicingCard() {
   const [goalResult, setGoalResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Synchronize with userParams if provided
+  useEffect(() => {
+    if (userParams) {
+      if (userParams.current_portfolio && userParams.current_portfolio > 0) {
+        setCurrentSaved(Math.round(userParams.current_portfolio * 0.2)); // 20% earmarked for immediate goals
+      }
+      if (userParams.annual_step_up_pct !== undefined) {
+        setStepUpPct(userParams.annual_step_up_pct);
+      }
+    }
+  }, [userParams]);
+
   const calculateTargetDate = (months) => {
     const d = new Date();
     d.setMonth(d.getMonth() + months);
@@ -28,8 +41,8 @@ export default function GoalSlicingCard() {
 
   const fetchGoalPlan = async () => {
     setLoading(true);
+    const targetDate = calculateTargetDate(targetMonths);
     try {
-      const targetDate = calculateTargetDate(targetMonths);
       const res = await fetch('/api/v1/goals/reverse-emi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,13 +55,36 @@ export default function GoalSlicingCard() {
           step_up_frequency: stepUpFreq,
           estimated_loan_apr_pct: 14.0
         })
-      });
-      if (res.ok) {
+      }).catch(() => null);
+
+      if (res && res.ok) {
         const data = await res.json();
         setGoalResult(data);
+      } else {
+        // High-precision Client-side Mathematical Fallback
+        const fallback = calculateGoalPlan({
+          goal_name: goalName,
+          target_amount: parseFloat(targetAmount) || 100000,
+          target_date: targetDate,
+          current_saved: parseFloat(currentSaved) || 0,
+          step_up_pct: parseFloat(stepUpPct) || 0.10,
+          step_up_frequency: stepUpFreq,
+          estimated_loan_apr_pct: 14.0
+        });
+        setGoalResult(fallback);
       }
     } catch (err) {
-      console.error('Failed to calculate goal plan:', err);
+      console.warn('Network issue in goal plan, calculating locally:', err);
+      const fallback = calculateGoalPlan({
+        goal_name: goalName,
+        target_amount: parseFloat(targetAmount) || 100000,
+        target_date: targetDate,
+        current_saved: parseFloat(currentSaved) || 0,
+        step_up_pct: parseFloat(stepUpPct) || 0.10,
+        step_up_frequency: stepUpFreq,
+        estimated_loan_apr_pct: 14.0
+      });
+      setGoalResult(fallback);
     } finally {
       setLoading(false);
     }

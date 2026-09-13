@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, TrendingUp, Sparkles, CheckCircle2, ShieldCheck, ExternalLink, RefreshCw, Layers } from 'lucide-react';
 import { format_indian_currency } from '../utils/formatters';
+import { scanTaxHarvesting, calculateMilestones } from '../utils/financialCalculations';
 
 export default function TaxAndMilestonesCard({ currentPortfolio, currentCtcLpa }) {
   const [taxData, setTaxData] = useState(null);
@@ -9,27 +10,47 @@ export default function TaxAndMilestonesCard({ currentPortfolio, currentCtcLpa }
 
   const fetchTaxAndMilestones = async () => {
     setLoading(true);
+    const activePortfolio = currentPortfolio || 500000.0;
+    const activeCtc = currentCtcLpa || 12.0;
+
     try {
       const [taxRes, freedomRes] = await Promise.all([
         fetch('/api/v1/tax/harvesting-scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ portfolio_value: currentPortfolio || 500000.0 })
-        }),
+          body: JSON.stringify({ portfolio_value: activePortfolio })
+        }).catch(() => null),
         fetch('/api/v1/milestones/freedom-tracker', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            current_corpus: currentPortfolio || 250000.0,
-            annual_ctc_lpa: currentCtcLpa || 12.0
+            current_corpus: activePortfolio,
+            annual_ctc_lpa: activeCtc
           })
-        })
+        }).catch(() => null)
       ]);
 
-      if (taxRes.ok) setTaxData(await taxRes.json());
-      if (freedomRes.ok) setFreedomData(await freedomRes.json());
+      if (taxRes && taxRes.ok) {
+        setTaxData(await taxRes.json());
+      } else {
+        setTaxData(scanTaxHarvesting({ portfolio_value: activePortfolio }));
+      }
+
+      if (freedomRes && freedomRes.ok) {
+        setFreedomData(await freedomRes.json());
+      } else {
+        setFreedomData(calculateMilestones({
+          current_corpus: activePortfolio,
+          annual_ctc_lpa: activeCtc
+        }));
+      }
     } catch (err) {
-      console.error('Failed to fetch tax & milestone data:', err);
+      console.warn('Network issue in tax & milestone data, calculating locally:', err);
+      setTaxData(scanTaxHarvesting({ portfolio_value: activePortfolio }));
+      setFreedomData(calculateMilestones({
+        current_corpus: activePortfolio,
+        annual_ctc_lpa: activeCtc
+      }));
     } finally {
       setLoading(false);
     }

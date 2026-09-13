@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ShieldCheck,
   Lock,
@@ -15,7 +15,7 @@ import {
   Info
 } from 'lucide-react';
 
-export default function BehavioralShield() {
+export default function BehavioralShield({ userParams }) {
   // Strategy Tiers backed by 15-Year Rolling Backtests
   const TIERS = {
     conservative: {
@@ -58,6 +58,27 @@ export default function BehavioralShield() {
   const [horizonYears, setHorizonYears] = useState(12);
   const [monthlySip, setMonthlySip] = useState(25000);
   const [annualStepUpPct, setAnnualStepUpPct] = useState(10); // 5%, 10%, 15%
+
+  // Sync with userParams if provided
+  useEffect(() => {
+    if (userParams) {
+      if (userParams.monthly_investable_sip) {
+        setMonthlySip(userParams.monthly_investable_sip);
+      }
+      if (userParams.near_target_amount) {
+        setTargetCorpusLakhs(userParams.near_target_amount / 100000.0);
+      }
+      if (userParams.annual_step_up_pct !== undefined) {
+        setAnnualStepUpPct(Math.round(userParams.annual_step_up_pct * 100));
+      }
+      if (userParams.near_target_date) {
+        const targetYear = new Date(userParams.near_target_date).getFullYear();
+        const currentYear = new Date().getFullYear();
+        const yearsDiff = Math.max(1, targetYear - currentYear);
+        setHorizonYears(yearsDiff);
+      }
+    }
+  }, [userParams]);
 
   const activeTier = TIERS[selectedTier];
   const effectiveCagr = (selectedTier === 'aggressive' && !hasAcknowledgedRisk)

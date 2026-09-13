@@ -1,248 +1,368 @@
-import React from 'react';
-import { ExternalLink, PieChart } from 'lucide-react';
-
-
-
-const sectionHeading = {
-  fontSize: '11px',
-  fontWeight: '600',
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-  color: 'var(--text-3)',
-  fontFamily: "'Outfit', sans-serif",
-  marginBottom: '12px',
-};
+import React, { useState } from 'react';
+import { ExternalLink, PieChart, ShieldCheck, ChevronDown, ChevronUp, AlertCircle, Info, Sparkles, CheckCircle2, TrendingUp, Layers } from 'lucide-react';
+import { getEnrichedFundUniverse } from '../utils/financialCalculations';
+import { format_indian_currency } from '../utils/formatters';
 
 const STRATEGY_LABELS = {
-  global_multi_asset: '🌐 Global Multi-Asset (INDmoney Style)',
-  aggressive:         '🌐 Global Multi-Asset Barbell',
-  ultra_aggressive:   '🚀 High-Alpha Tech & Small Cap',
-  balanced:           '🛡️ All-Weather Balanced',
+  global_multi_asset: '🌐 Global Multi-Asset Barbell (15-17% Target XIRR)',
+  aggressive:         '🌐 Global Multi-Asset Barbell (15-17% Target XIRR)',
+  ultra_aggressive:   '🚀 High-Alpha Tech & Small Cap (17%+ Target XIRR)',
+  balanced:           '🛡️ All-Weather Balanced (12-14% Target XIRR)',
 };
 
 function getRiskStyle(risk = '') {
   const r = risk.toLowerCase();
-  if (r === 'very high' || r === 'high') {
+  if (r.includes('very high') || r.includes('high')) {
     return {
       color: 'var(--danger)',
-      backgroundColor: 'rgba(220,38,38,0.08)',
-      border: '1px solid rgba(220,38,38,0.2)',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      border: '1px solid rgba(239, 68, 68, 0.25)',
     };
   }
-  if (r === 'moderate-high' || r === 'moderate') {
+  if (r.includes('moderate')) {
     return {
       color: 'var(--warning)',
-      backgroundColor: 'rgba(217,119,6,0.08)',
-      border: '1px solid rgba(217,119,6,0.2)',
+      backgroundColor: 'rgba(234, 179, 8, 0.1)',
+      border: '1px solid rgba(234, 179, 8, 0.25)',
     };
   }
   return {
     color: 'var(--success)',
-    backgroundColor: 'rgba(22,163,74,0.08)',
-    border: '1px solid rgba(22,163,74,0.2)',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
   };
 }
 
-export default function RecommendedPortfolioCard({ fundUniverse }) {
-  if (!fundUniverse) return null;
+export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lumpSum, riskMode = 'global_multi_asset' }) {
+  const [expandedFundId, setExpandedFundId] = useState(null);
 
-  const hasInvestment =
-    (fundUniverse.total_monthly_sip && fundUniverse.total_monthly_sip > 0) ||
-    (fundUniverse.total_lump_sum && fundUniverse.total_lump_sum > 0);
+  // Dynamic enrichment: If monthlySip prop is provided, calculate real-time rupee splits
+  const activeSip = monthlySip || (fundUniverse && fundUniverse.total_monthly_sip) || 25000;
+  const activeLump = lumpSum !== undefined ? lumpSum : ((fundUniverse && fundUniverse.total_lump_sum) || 0);
+  const activeMode = riskMode || (fundUniverse && fundUniverse.risk_mode) || 'global_multi_asset';
 
-  if (!hasInvestment) return null;
+  const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode);
+  const assets = enrichedData.asset_breakdown || [];
+  const weightedCagr = enrichedData.portfolio_weighted_5y_cagr;
+  const weightedTer = enrichedData.portfolio_weighted_ter;
+  const totalGrowth = enrichedData.formatted_total_annual_growth;
+  const strategyLabel = STRATEGY_LABELS[activeMode] || '🌐 Global Multi-Asset Barbell';
 
-  const assets          = fundUniverse.asset_breakdown || fundUniverse.funds || [];
-  const weightedCagr    = fundUniverse.portfolio_weighted_5y_cagr || 0;
-  const totalGrowth     = fundUniverse.formatted_total_annual_growth || '—';
-  const strategyLabel   = STRATEGY_LABELS[fundUniverse.risk_mode] || (fundUniverse.risk_mode || 'Aggressive');
+  const toggleExpand = (fundId) => {
+    setExpandedFundId(prev => prev === fundId ? null : fundId);
+  };
 
   return (
     <div className="col-span-12 ip-card">
 
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2.5">
-          <PieChart style={{ width: '18px', height: '18px', color: 'var(--accent)', flexShrink: 0 }} />
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-5 pb-4 border-b border-[var(--border)]">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--accent)] shadow-sm">
+            <PieChart className="w-5 h-5" />
+          </div>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-1)', fontFamily: "'Outfit', sans-serif" }}>
-              Recommended Portfolio
-            </h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", marginTop: '2px' }}>
-              Fund allocation, historical returns, and projected annual wealth addition.
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-[var(--text-1)]">
+                Institutional Mutual Fund Allocator & Empirical Research
+              </h2>
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20">
+                100% Direct Plans
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-3)] mt-0.5">
+              Exact monthly rupee allocations, TER efficiency, 7-year rolling return backtests, and category peer selection rationale.
             </p>
           </div>
         </div>
 
-        {/* Strategy pill */}
-        <span style={{
-          fontSize: '12px',
-          fontFamily: "'Outfit', sans-serif",
-          color: 'var(--text-2)',
-          backgroundColor: 'var(--surface-2)',
-          border: '1px solid var(--border)',
-          borderRadius: '9999px',
-          padding: '4px 12px',
-          fontWeight: '500',
-        }}>
-          {strategyLabel}
-        </span>
+        {/* Strategy Pill & Key Portfolio Stats */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-3 py-1 text-xs font-mono font-semibold rounded-lg bg-[var(--surface-2)] text-[var(--accent)] border border-[var(--border)] shadow-sm">
+            {strategyLabel}
+          </span>
+        </div>
       </div>
 
-      {/* ── Fund Table ── */}
-      <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '16px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: "'Outfit', sans-serif" }}>
+      {/* ── Live Rupee Allocation Summary Banner ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+          <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-medium">
+            Active Monthly SIP
+          </span>
+          <span className="text-base sm:text-lg font-black font-mono text-[var(--text-1)] mt-0.5 block">
+            {format_indian_currency(activeSip)}/mo
+          </span>
+        </div>
+
+        <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+          <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-medium">
+            Weighted 5Y CAGR
+          </span>
+          <span className="text-base sm:text-lg font-black font-mono text-[var(--success)] mt-0.5 block">
+            {weightedCagr}%
+          </span>
+        </div>
+
+        <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+          <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-medium">
+            Weighted TER (Expense Ratio)
+          </span>
+          <span className="text-base sm:text-lg font-black font-mono text-[var(--accent)] mt-0.5 block">
+            {weightedTer}% <span className="text-[10px] font-normal text-[var(--text-3)]">(Direct)</span>
+          </span>
+        </div>
+
+        <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+          <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-medium">
+            1-Yr Projected Wealth Addition
+          </span>
+          <span className="text-base sm:text-lg font-black font-mono text-[var(--accent)] mt-0.5 block">
+            {totalGrowth}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Mutual Fund Deep Research Table ── */}
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] mb-4">
+        <table className="w-full border-collapse text-left text-xs font-sans">
           <thead>
-            <tr style={{ backgroundColor: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
-              {['Fund', 'Risk', '3Y / 5Y / All', 'Annual addition', 'Role', 'Execute'].map(h => (
-                <th key={h} style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'var(--text-3)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  fontFamily: "'Outfit', sans-serif",
-                  whiteSpace: 'nowrap',
-                }}>
-                  {h}
-                </th>
-              ))}
+            <tr className="bg-[var(--surface-2)] border-b border-[var(--border)] text-[var(--text-3)] uppercase tracking-wider font-mono text-[11px]">
+              <th className="py-3 px-4">Fund & AMFI Code</th>
+              <th className="py-3 px-4">Monthly Allocation</th>
+              <th className="py-3 px-4">TER (Direct)</th>
+              <th className="py-3 px-4">Min Horizon</th>
+              <th className="py-3 px-4">3Y / 5Y / 7Y Rolling</th>
+              <th className="py-3 px-4">Downside Shield</th>
+              <th className="py-3 px-4 text-center">Category Peer Rationale</th>
+              <th className="py-3 px-4 text-right">Execute</th>
             </tr>
           </thead>
-          <tbody>
-            {assets.map((item, idx) => {
-              const returns    = item.returns || { cagr_3y: 0, cagr_5y: 0, cagr_all_time: 0 };
-              const riskStyle  = getRiskStyle(item.risk_level || 'High');
-              const fundName   = item.fund_name || item.scheme_name || '—';
-              const bucket     = item.bucket || '';
+          <tbody className="divide-y divide-[var(--border)]">
+            {assets.map((item) => {
+              const returns = item.returns || {};
+              const isExpanded = expandedFundId === item.id;
+              const riskStyle = getRiskStyle(item.risk_level || 'High');
 
               return (
-                <tr
-                  key={idx}
-                  style={{
-                    borderBottom: '1px solid var(--border)',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--surface-2)'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  {/* Fund name + bucket */}
-                  <td style={{ padding: '12px 14px', maxWidth: '220px' }}>
-                    <p style={{ fontWeight: '500', color: 'var(--text-1)', fontSize: '13px', marginBottom: '2px' }}>
-                      {fundName}
-                    </p>
-                    {bucket && (
-                      <span style={{
-                        fontSize: '11px',
-                        color: 'var(--text-3)',
-                        fontFamily: "'Outfit', sans-serif",
-                      }}>
-                        {bucket}
+                <React.Fragment key={item.id}>
+                  <tr 
+                    className={`transition-colors cursor-pointer ${
+                      isExpanded ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-2)]'
+                    }`}
+                    onClick={() => toggleExpand(item.id)}
+                  >
+                    {/* Fund Name & Role */}
+                    <td className="py-3.5 px-4 max-w-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[var(--text-1)] text-xs block">
+                          {item.fund_name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-mono text-[var(--text-3)]">
+                          AMFI: {item.amfi_code}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--surface-3)] text-[var(--text-2)] border border-[var(--border)]">
+                          {item.bucket}
+                        </span>
+                        <span 
+                          style={riskStyle} 
+                          className="text-[9px] px-1.5 py-0.2 rounded-full font-semibold font-mono"
+                        >
+                          {item.risk_level}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Exact Rupee Allocation */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="font-mono font-bold text-sm text-[var(--success)]">
+                          {item.formatted_sip}
+                        </span>
+                        <span className="text-[10px] font-mono text-[var(--text-3)]">
+                          {item.allocation_pct}% of total SIP
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* TER */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-[var(--text-1)]">
+                      {item.ter_pct}%
+                    </td>
+
+                    {/* Min Horizon */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border)]">
+                        {item.min_horizon}
                       </span>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Risk badge */}
-                  <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                    <span style={{
-                      ...riskStyle,
-                      fontSize: '11px',
-                      fontWeight: '500',
-                      borderRadius: '9999px',
-                      padding: '3px 8px',
-                      fontFamily: "'Outfit', sans-serif",
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {item.risk_level || 'High'}
-                    </span>
-                  </td>
-
-                  {/* Returns */}
-                  <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      {[
-                        { label: '3Y', value: returns.cagr_3y },
-                        { label: '5Y', value: returns.cagr_5y },
-                        { label: 'All', value: returns.cagr_all_time },
-                      ].map(r => (
-                        <div key={r.label} style={{ textAlign: 'center' }}>
-                          <p style={{ fontSize: '10px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", marginBottom: '1px' }}>
-                            {r.label}
-                          </p>
-                          <p style={{ fontSize: '13px', fontFamily: "'JetBrains Mono', monospace", fontWeight: '600', color: 'var(--text-1)' }}>
-                            {r.value}%
-                          </p>
+                    {/* Returns (3Y / 5Y / 7Y Rolling) */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono">
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">3Y</span>
+                          <span className="font-semibold text-[var(--text-1)]">{returns.cagr_3y}%</span>
                         </div>
-                      ))}
-                    </div>
-                  </td>
+                        <span className="text-[var(--border)]">/</span>
+                        <div>
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">5Y</span>
+                          <span className="font-bold text-[var(--success)]">{returns.cagr_5y}%</span>
+                        </div>
+                        <span className="text-[var(--border)]">/</span>
+                        <div>
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">7Y XIRR</span>
+                          <span className="font-bold text-[var(--accent)]">{returns.rolling_7y_median_xirr}%</span>
+                        </div>
+                      </div>
+                    </td>
 
-                  {/* Annual wealth addition */}
-                  <td style={{ padding: '12px 14px', fontFamily: "'JetBrains Mono', monospace", fontWeight: '600', color: 'var(--success)', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                    {item.formatted_growth_contribution || '—'}
-                  </td>
+                    {/* Downside Shield */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-[11px]">
+                      <div className="flex flex-col">
+                        <span className="text-[var(--text-1)] font-semibold">
+                          Downside: <span className="text-emerald-400 font-bold">{item.downside_capture_pct}%</span>
+                        </span>
+                        <span className="text-[10px] text-[var(--text-3)]">
+                          Upside: {item.upside_capture_pct}% | Ratio: {item.capture_ratio}
+                        </span>
+                      </div>
+                    </td>
 
-                  {/* Role in goal */}
-                  <td style={{ padding: '12px 14px', color: 'var(--text-2)', fontSize: '13px', maxWidth: '180px' }}>
-                    {item.goal_impact_role || '—'}
-                  </td>
+                    {/* Peer Comparison Toggle Button */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(item.id)}
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all inline-flex items-center gap-1 cursor-pointer ${
+                          isExpanded
+                            ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                            : 'bg-[var(--surface-2)] text-[var(--accent)] border-[var(--accent-border)] hover:bg-[var(--surface-3)]'
+                        }`}
+                      >
+                        <span>Why Chosen</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    </td>
 
-                  {/* Groww link */}
-                  <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                    {item.groww_url ? (
+                    {/* Groww Direct Execution Link */}
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <a
                         href={item.groww_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '12px',
-                          fontFamily: "'Outfit', sans-serif",
-                          fontWeight: '500',
-                          color: 'var(--accent)',
-                          textDecoration: 'none',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--accent)] text-xs font-mono font-bold text-[var(--accent)] transition-all hover:shadow-sm"
                       >
-                        Groww <ExternalLink style={{ width: '11px', height: '11px' }} />
+                        Groww <ExternalLink className="w-3 h-3" />
                       </a>
-                    ) : '—'}
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+
+                  {/* ── Expandable Drawer: Category Peer Comparison & Deep Research ── */}
+                  {isExpanded && (
+                    <tr className="bg-[var(--surface-2)]/70">
+                      <td colSpan={8} className="p-4 border-t border-b border-[var(--border)]">
+                        <div className="rounded-xl p-4 bg-[var(--surface)] border border-[var(--border)] space-y-4">
+                          
+                          {/* Heading & Summary */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                                <h4 className="text-sm font-bold text-[var(--text-1)]">
+                                  Empirical Selection Audit: {item.fund_name}
+                                </h4>
+                              </div>
+                              <p className="text-xs text-[var(--text-2)] mt-0.5">
+                                {item.why_chosen_summary}
+                              </p>
+                            </div>
+                            <span className="px-2.5 py-1 text-[10px] font-mono font-bold rounded bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20">
+                              {item.aum_status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Why this fund was chosen */}
+                            <div className="p-3.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
+                              <span className="text-[11px] font-mono uppercase text-[var(--success)] font-bold block mb-2 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Key Quantitative Drivers
+                              </span>
+                              <ul className="space-y-1.5 text-xs text-[var(--text-2)]">
+                                {item.peer_comparison?.reasons_chosen?.map((reason, rIdx) => (
+                                  <li key={rIdx} className="flex items-start gap-2">
+                                    <span className="text-[var(--accent)] mt-0.5">•</span>
+                                    <span>{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            {/* Why Category Peers Were Rejected */}
+                            <div className="p-3.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
+                              <span className="text-[11px] font-mono uppercase text-[var(--danger)] font-bold block mb-2 flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5" /> Category Peers Evaluated & Rejected
+                              </span>
+                              <div className="space-y-2 text-xs">
+                                {item.peer_comparison?.peers_avoided?.map((peer, pIdx) => (
+                                  <div key={pIdx} className="p-2 rounded bg-[var(--surface)] border border-[var(--border)]">
+                                    <span className="font-semibold text-[var(--text-1)] block">
+                                      ❌ {peer.name}
+                                    </span>
+                                    <p className="text-[11px] text-[var(--text-3)] mt-0.5 leading-relaxed">
+                                      {peer.flaw}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quant Metrics Bottom Row */}
+                          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono pt-2 border-t border-[var(--border)] text-[var(--text-3)]">
+                            <div>
+                              <span>Benchmark: </span>
+                              <strong className="text-[var(--text-1)]">{item.benchmark}</strong>
+                            </div>
+                            <div>
+                              <span>AUM Size: </span>
+                              <strong className="text-[var(--text-1)]">₹{item.aum_crores.toLocaleString('en-IN')} Cr</strong>
+                            </div>
+                            <div>
+                              <span>Overall Capture Ratio: </span>
+                              <strong className="text-[var(--success)]">{item.capture_ratio}x</strong>
+                            </div>
+                            <a
+                              href={item.groww_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[var(--accent)] font-semibold hover:underline inline-flex items-center gap-1"
+                            >
+                              Verify Direct NAV on Groww <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
 
-      {/* ── Summary row ── */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        paddingTop: '16px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-      }}>
-        <div>
-          <p style={{ fontSize: '11px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>
-            Portfolio weighted 5Y CAGR
-          </p>
-          <p style={{ fontSize: '18px', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: 'var(--success)' }}>
-            {weightedCagr}%
-          </p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: '11px', color: 'var(--text-3)', fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>
-            Total annual wealth addition
-          </p>
-          <p style={{ fontSize: '18px', fontFamily: "'JetBrains Mono', monospace", fontWeight: '700', color: 'var(--accent)' }}>
-            {totalGrowth}
-          </p>
+      {/* ── Footer Guidance ── */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-3)]">
+        <p>
+          💡 <strong>Pro Tip:</strong> Click <em>"Why Chosen"</em> on any scheme to view quantitative peer elimination criteria. All investments execute via direct SEBI-registered AMC plans.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-mono text-[11px] text-[var(--text-2)]">Live Factor Rebalance Guard Active</span>
         </div>
       </div>
 
