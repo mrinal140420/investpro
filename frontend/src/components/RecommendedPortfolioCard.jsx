@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, PieChart, ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, AlertCircle, Info, Sparkles, CheckCircle2, TrendingUp, Layers, Lock, Unlock } from 'lucide-react';
+import { ExternalLink, PieChart, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp, AlertCircle, Sparkles, CheckCircle2, TrendingUp, Info } from 'lucide-react';
 import { getEnrichedFundUniverse } from '../utils/financialCalculations';
 import { format_indian_currency } from '../utils/formatters';
 
@@ -35,20 +35,21 @@ function getRiskStyle(risk = '') {
 
 export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lumpSum, riskMode = 'global_multi_asset' }) {
   const [expandedFundId, setExpandedFundId] = useState(null);
-  const [showTheoretical, setShowTheoretical] = useState(false);
+  const [allocationMode, setAllocationMode] = useState('proportional'); // 'proportional' | 'focused'
+  const [focusedFundId, setFocusedFundId] = useState('uti_momentum_30');
 
   // Dynamic enrichment: If monthlySip prop is provided, calculate real-time rupee splits
   const activeSip = monthlySip || (fundUniverse && fundUniverse.total_monthly_sip) || 25000;
   const activeLump = lumpSum !== undefined ? lumpSum : ((fundUniverse && fundUniverse.total_lump_sum) || 0);
   const activeMode = riskMode || (fundUniverse && fundUniverse.risk_mode) || 'global_multi_asset';
 
-  const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode, showTheoretical);
+  const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode, allocationMode, focusedFundId);
   const assets = enrichedData.asset_breakdown || [];
   const weightedCagr = enrichedData.portfolio_weighted_5y_cagr;
   const weightedTer = enrichedData.portfolio_weighted_ter;
   const totalGrowth = enrichedData.formatted_total_annual_growth;
   const strategyLabel = STRATEGY_LABELS[activeMode] || '🌐 Global Multi-Asset Barbell';
-  const isAdaptive = enrichedData.is_adaptive_sizing_active;
+  const belowMinCount = enrichedData.below_min_count || 0;
 
   const toggleExpand = (fundId) => {
     setExpandedFundId(prev => prev === fundId ? null : fundId);
@@ -125,77 +126,75 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
         </div>
       </div>
 
-      {/* ── Adaptive Capital Sizing & AMC Floor Guard Banner ── */}
+      {/* ── Real-World AMC Minimum Floor Notice & Execution Mode Selector (for SIP < ₹2,500) ── */}
       {activeSip < 2500 && (
-        <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+        <div className="mb-5 p-4 rounded-xl border border-sky-500/30 bg-sky-500/5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <ShieldCheck className="w-4 h-4 text-sky-400" />
               <h3 className="text-xs sm:text-sm font-bold text-[var(--text-1)]">
-                Adaptive Capital Sizing & AMC Minimum Floor Guard Active
+                Real-World Execution Guide: Standalone AMC SIP Floors
               </h3>
-              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                {enrichedData.tier_name}
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                Budget: {format_indian_currency(activeSip)}/mo
               </span>
             </div>
 
-            {/* Executable vs Theoretical Toggle */}
+            {/* Execution Strategy Toggle */}
             <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[var(--surface-2)] border border-[var(--border)]">
               <button
                 type="button"
-                onClick={() => setShowTheoretical(false)}
+                onClick={() => setAllocationMode('proportional')}
                 className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  !showTheoretical
+                  allocationMode === 'proportional'
                     ? 'bg-[var(--accent)] text-white shadow-sm'
                     : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                 }`}
               >
-                Executable Plan ({enrichedData.active_fund_count} Active)
+                Proportional Slices
               </button>
               <button
                 type="button"
-                onClick={() => setShowTheoretical(true)}
+                onClick={() => setAllocationMode('focused')}
                 className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  showTheoretical
+                  allocationMode === 'focused'
                     ? 'bg-[var(--accent)] text-white shadow-sm'
                     : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                 }`}
               >
-                Theoretical 5-Fund Target
+                Single-Fund Mandate (100%)
               </button>
             </div>
           </div>
 
-          <p className="text-xs text-[var(--text-2)] leading-relaxed">
-            {!showTheoretical ? (
-              <>
-                <strong>Real-World Execution Rule:</strong> Indian mutual fund AMCs enforce a minimum ₹100 or ₹500 monthly SIP floor. Slicing <strong>{format_indian_currency(activeSip)}/mo</strong> across 5 funds (e.g. ₹75, ₹60, ₹45) is rejected by bank NACH mandates and creates zero extra diversification over a broad 30-stock index. To guarantee 100% execution, capital is concentrated into <strong>UTI Nifty 200 Momentum 30</strong>. Remaining barbell pillars unlock as your 10% annual Step-Up scales your capital!
-              </>
+          <div className="text-xs text-[var(--text-2)] leading-relaxed space-y-1.5">
+            {allocationMode === 'proportional' ? (
+              <p>
+                <strong>Standalone Reality:</strong> Every fund shown below is an independent legal contract with its AMC. Mutual funds do <strong>not</strong> have platform-level unlock gates—you can buy any fund from Day 1. However, individual AMCs mandate a minimum SIP of <strong>₹100</strong> (e.g. UTI, Tata, HDFC) or <strong>₹500</strong> (Motilal). Slicing {format_indian_currency(activeSip)}/mo into 5 slices produces sub-₹100 amounts that bank NACH mandates will reject.
+              </p>
             ) : (
-              <>
-                <strong className="text-amber-400">⚠️ Theoretical 5-Fund Projection:</strong> Displaying raw percentage splits. Note that {enrichedData.theoretical_unexecutable_count} of 5 funds receive sub-₹100 allocations which cannot be processed on Groww or Zerodha until monthly SIP reaches ₹2,500. Switch to <em>Executable Plan</em> for real-world execution.
-              </>
+              <div>
+                <p>
+                  <strong>Focused Mandate Active:</strong> Concentrating your full {format_indian_currency(activeSip)}/mo into a single high-conviction scheme completely satisfies AMC minimums and avoids fractional mandate rejection. Select your preferred scheme:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {assets.filter(a => a.amc_min_sip <= activeSip).map(fund => (
+                    <button
+                      key={fund.id}
+                      type="button"
+                      onClick={() => setFocusedFundId(fund.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                        focusedFundId === fund.id
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500 font-bold shadow-sm'
+                          : 'bg-[var(--surface-2)] text-[var(--text-2)] border-[var(--border)] hover:border-[var(--accent)]'
+                      }`}
+                    >
+                      {fund.fund_name.split(' ')[0]} {fund.fund_name.split(' ')[1]} (Min ₹{fund.amc_min_sip})
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-          </p>
-
-          {/* Staged Step-Up Unlock Ladder */}
-          <div className="pt-2 border-t border-amber-500/15 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-            <span className="text-[var(--text-3)] uppercase text-[10px] font-bold">Step-Up Unlock Ladder:</span>
-            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip < 500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-2)]'}`}>
-              {activeSip < 500 ? '● Active (< ₹500)' : '✓ Unlocked'}: UTI Momentum 30 (100%)
-            </span>
-            <span className="text-[var(--text-3)]">→</span>
-            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip >= 500 && activeSip < 1500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-3)]'}`}>
-              ₹500/mo: + Tata Small Cap (2 Funds)
-            </span>
-            <span className="text-[var(--text-3)]">→</span>
-            <span className={`px-2 py-0.5 rounded-full font-bold ${activeSip >= 1500 && activeSip < 2500 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--surface-2)] text-[var(--text-3)]'}`}>
-              ₹1,500/mo: + Motilal US S&P 500 (3 Funds)
-            </span>
-            <span className="text-[var(--text-3)]">→</span>
-            <span className="px-2 py-0.5 rounded-full font-bold bg-[var(--surface-2)] text-[var(--text-3)]">
-              ₹2,500/mo: Full 5-Fund Barbell
-            </span>
           </div>
         </div>
       )}
@@ -208,6 +207,7 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
               <th className="py-3 px-4">Fund & AMFI Code</th>
               <th className="py-3 px-4">Monthly Allocation</th>
               <th className="py-3 px-4">TER (Direct)</th>
+              <th className="py-3 px-4">AMC Min SIP</th>
               <th className="py-3 px-4">Min Horizon</th>
               <th className="py-3 px-4">3Y / 5Y / 7Y Rolling</th>
               <th className="py-3 px-4">Downside Shield</th>
@@ -220,7 +220,7 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
               const returns = item.returns || {};
               const isExpanded = expandedFundId === item.id;
               const riskStyle = getRiskStyle(item.risk_level || 'High');
-              const isLocked = item.is_locked;
+              const isBelowFloor = item.is_below_amc_min;
 
               return (
                 <React.Fragment key={item.id}>
@@ -228,22 +228,15 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
                     className={`transition-colors cursor-pointer ${
                       isExpanded
                         ? 'bg-[var(--surface-2)]'
-                        : isLocked
-                        ? 'opacity-65 hover:opacity-100 bg-[var(--surface-2)]/20 hover:bg-[var(--surface-2)]/50'
                         : 'hover:bg-[var(--surface-2)]'
                     }`}
                     onClick={() => toggleExpand(item.id)}
                   >
                     {/* Fund Name & Role */}
                     <td className="py-3.5 px-4 max-w-xs">
-                      <div className="flex items-center gap-2">
-                        {isLocked && (
-                          <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" title="Locked until Step-Up" />
-                        )}
-                        <span className={`font-bold text-xs block ${isLocked ? 'text-[var(--text-2)]' : 'text-[var(--text-1)]'}`}>
-                          {item.fund_name}
-                        </span>
-                      </div>
+                      <span className="font-bold text-xs block text-[var(--text-1)]">
+                        {item.fund_name}
+                      </span>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] font-mono text-[var(--text-3)]">
                           AMFI: {item.amfi_code}
@@ -262,35 +255,31 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
 
                     {/* Exact Rupee Allocation */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      {isLocked ? (
-                        <div className="flex flex-col">
-                          <span className="font-mono font-bold text-xs text-[var(--text-3)] flex items-center gap-1">
-                            <Lock className="w-3 h-3 text-amber-400" /> ₹0/mo
+                      <div className="flex flex-col">
+                        <span className={`font-mono font-bold text-sm ${item.allocated_sip > 0 ? 'text-[var(--success)]' : 'text-[var(--text-3)]'}`}>
+                          {item.formatted_sip}
+                        </span>
+                        <span className="text-[10px] font-mono text-[var(--text-3)]">
+                          {item.effective_allocation_pct}% of total SIP
+                        </span>
+                        {isBelowFloor && (
+                          <span className="text-[9px] font-mono font-bold text-rose-400 mt-0.5 flex items-center gap-1">
+                            <AlertTriangle className="w-2.5 h-2.5" /> Below AMC Min
                           </span>
-                          <span className="text-[10px] font-mono text-amber-400/90 font-medium">
-                            {item.status_label}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <span className="font-mono font-bold text-sm text-[var(--success)]">
-                            {item.formatted_sip}
-                          </span>
-                          <span className="text-[10px] font-mono text-[var(--text-3)]">
-                            {item.effective_allocation_pct || item.allocation_pct}% of total SIP
-                          </span>
-                          {item.is_below_amc_min && (
-                            <span className="text-[9px] font-mono font-bold text-rose-400 mt-0.5">
-                              ⚠️ Below AMC Min (₹{item.amc_min_sip})
-                            </span>
-                          )}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
 
                     {/* TER */}
                     <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-[var(--text-1)]">
                       {item.ter_pct}%
+                    </td>
+
+                    {/* AMC Min SIP Floor */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono">
+                      <span className="px-2 py-0.5 text-[10px] rounded bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border)]">
+                        ≥ ₹{item.amc_min_sip}/mo
+                      </span>
                     </td>
 
                     {/* Min Horizon */}
@@ -348,35 +337,24 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
                       </button>
                     </td>
 
-                    {/* Groww Direct Execution Link */}
+                    {/* Groww Direct Execution Link (Always Available Standalone) */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      {isLocked ? (
-                        <a
-                          href={item.groww_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-[11px] font-mono text-[var(--text-3)] hover:text-[var(--text-1)] hover:border-[var(--accent)] transition-all"
-                          title="Preview fund on Groww ahead of Step-Up unlock"
-                        >
-                          Preview <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <a
-                          href={item.groww_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500 text-xs font-mono font-bold text-[var(--success)] transition-all hover:shadow-sm"
-                        >
-                          Groww Direct <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
+                      <a
+                        href={item.groww_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500 text-xs font-mono font-bold text-[var(--success)] transition-all hover:shadow-sm"
+                        title="Invest directly on Groww (Zero Commission Direct Plan)"
+                      >
+                        Groww Direct <ExternalLink className="w-3 h-3" />
+                      </a>
                     </td>
                   </tr>
 
                   {/* ── Expandable Drawer: Category Peer Comparison & Deep Research ── */}
                   {isExpanded && (
                     <tr className="bg-[var(--surface-2)]/70">
-                      <td colSpan={8} className="p-4 border-t border-b border-[var(--border)]">
+                      <td colSpan={9} className="p-4 border-t border-b border-[var(--border)]">
                         <div className="rounded-xl p-4 bg-[var(--surface)] border border-[var(--border)] space-y-4">
                           
                           {/* Heading & Summary */}
@@ -471,11 +449,11 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
       {/* ── Footer Guidance ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-3)]">
         <p>
-          💡 <strong>Pro Tip:</strong> Click <em>"Why Chosen"</em> on any scheme to view quantitative peer elimination criteria. All investments execute via direct SEBI-registered AMC plans.
+          💡 <strong>Standalone Mandates:</strong> Each scheme is an independent contract. You can initiate an SIP on Groww or Zerodha Coin without portfolio-level locks. Direct plans eliminate intermediary distributor commissions (~1.0–1.5%/yr).
         </p>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono text-[11px] text-[var(--text-2)]">Live Factor Rebalance Guard Active</span>
+          <span className="font-mono text-[11px] text-[var(--text-2)]">Direct Plan Verification Active</span>
         </div>
       </div>
 

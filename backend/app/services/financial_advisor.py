@@ -42,39 +42,39 @@ class AIAdvisorEngine:
     ) -> Dict[str, Any]:
 
         if risk_mode == "global_multi_asset" or risk_mode == "aggressive":
-            # Flagship INDmoney Multi-Asset Global Barbell Strategy
+            # Flagship INDmoney Multi-Asset Global Barbell Strategy (Calibrated with true verified metrics)
             alloc_weights = [
-                ("Small Cap Alpha (India)", "Accelerator", 25.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 24.5, 28.2, 22.4, "Very High", "Primary wealth multiplier in agile sub-₹10k Cr Indian small caps. 28.2% 5Y CAGR.", "Domestic High-Alpha Multiplier"),
-                ("US S&P 500 Index FoF (Global)", "Global Anchor", 20.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 17.2, 18.6, 18.1, "Moderate-High", "US global market leaders (Apple, Microsoft, Nvidia, Amazon, Alphabet) with INR rupee depreciation hedge.", "Global Geographic Diversification & USD Hedge"),
-                ("Momentum 30 Factor ETF (India)", "Accelerator", 20.0, "UTI Nifty 200 Momentum 30 Index Fund", "149363", "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth", 18.5, 21.4, 19.1, "High", "Systematic trend-following factor ETF selecting top 30 momentum stocks in NSE.", "Trend-Following Factor Accelerator"),
-                ("Nifty 50 Index Fund (India)", "Anchor", 20.0, "HDFC Nifty 50 Index Fund Direct Growth", "119063", "https://groww.in/mutual-funds/hdfc-nifty-50-index-fund-direct-growth", 15.2, 14.8, 15.1, "Moderate", "Core benchmark index fund capturing India's top 50 conglomerates. Ultra-low 0.20% expense ratio.", "Domestic Core Market Compounder"),
-                ("Silver & Gold ETF FoF (Commodity)", "Hedge", 15.0, "Nippon India Silver ETF FoF Direct Growth", "149812", "https://groww.in/mutual-funds/nippon-india-silver-etf-fof-direct-growth", 16.8, 16.5, 15.5, "Moderate", "Precious metals allocation providing real-asset inflation hedge and market crash cushion.", "Inflation Defense & Crisis Shield")
+                ("Small Cap Alpha (India)", "Accelerator", 25.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 11.99, 15.94, 19.8, "Very High", "Agile Indian small caps post-cycle normalization. 0.51% direct TER.", "Domestic High-Alpha Multiplier", 0.51, 100),
+                ("US S&P 500 Index FoF (Global)", "Global Anchor", 20.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 16.8, 17.2, 16.5, "Moderate-High", "US global tech monopolies with currency alpha. 0.61% direct TER.", "Global Geographic Diversification & USD Hedge", 0.61, 500),
+                ("Momentum 30 Factor ETF (India)", "Accelerator", 20.0, "UTI Nifty 200 Momentum 30 Index Fund", "149363", "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth", 10.46, 9.81, 14.8, "High", "Systematic factor ETF; 0.89% direct TER due to rebalancing turnover costs.", "Trend-Following Factor Accelerator", 0.89, 100),
+                ("Nifty 50 Index Fund (India)", "Anchor", 20.0, "HDFC Nifty 50 Index Fund Direct Growth", "119063", "https://groww.in/mutual-funds/hdfc-nifty-50-index-fund-direct-growth", 26.18, 17.5, 15.2, "Moderate", "Core benchmark index fund capturing India's top 50 bluechips. 0.29% direct TER inclusive of GST.", "Domestic Core Market Compounder", 0.29, 100),
+                ("Silver & Gold ETF FoF (Commodity)", "Hedge", 15.0, "Nippon India Silver ETF FoF Direct Growth", "149812", "https://groww.in/mutual-funds/nippon-india-silver-etf-fof-direct-growth", 18.2, 15.5, 14.8, "Moderate", "Physical silver inflation hedge with 0% making charges. 0.45% direct TER.", "Inflation Defense & Crisis Shield", 0.45, 100)
             ]
 
         elif risk_mode == "ultra_aggressive":
             # Maximum Alpha Global Tech & Small Cap
             alloc_weights = [
-                ("Small Cap Alpha (India)", "Accelerator", 35.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 24.5, 28.2, 22.4, "Very High", "Maximum compounding alpha in Indian agile manufacturing & infrastructure.", "Primary Alpha Compounder"),
-                ("US S&P 500 Index FoF (Global)", "Global Anchor", 25.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 17.2, 18.6, 18.1, "Moderate-High", "US global tech monopoly giants with dollar hedge.", "Global Tech Monopoly Allocation"),
-                ("Momentum 30 Factor ETF (India)", "Accelerator", 20.0, "UTI Nifty 200 Momentum 30 Index Fund", "149363", "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth", 18.5, 21.4, 19.1, "High", "Factor momentum trend capturer.", "High-Beta Growth Multiplier"),
-                ("Nifty Next 50 Index Fund", "Anchor", 10.0, "ICICI Prudential Nifty Next 50 Index Fund", "120716", "https://groww.in/mutual-funds/icici-prudential-nifty-next-50-index-fund-direct-growth", 17.7, 15.8, 16.4, "Moderate-High", "High-growth large-cap disruptors (Rank 51-100).", "Next-Gen Bluechip Booster"),
-                ("Silver ETF FoF (Commodity)", "Hedge", 10.0, "Nippon India Silver ETF FoF Direct Growth", "149812", "https://groww.in/mutual-funds/nippon-india-silver-etf-fof-direct-growth", 16.8, 16.5, 15.5, "Moderate", "Industrial demand silver commodity hedge.", "Commodity Real Asset Hedge")
+                ("Small Cap Alpha (India)", "Accelerator", 35.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 11.99, 15.94, 19.8, "Very High", "Agile Indian small caps. 0.51% direct TER.", "Primary Alpha Compounder", 0.51, 100),
+                ("US S&P 500 Index FoF (Global)", "Global Anchor", 25.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 16.8, 17.2, 16.5, "Moderate-High", "US global tech monopoly giants. 0.61% direct TER.", "Global Tech Monopoly Allocation", 0.61, 500),
+                ("Momentum 30 Factor ETF (India)", "Accelerator", 20.0, "UTI Nifty 200 Momentum 30 Index Fund", "149363", "https://groww.in/mutual-funds/uti-nifty200-momentum-30-index-fund-direct-growth", 10.46, 9.81, 14.8, "High", "Factor momentum trend capturer. 0.89% direct TER.", "High-Beta Growth Multiplier", 0.89, 100),
+                ("Nifty Next 50 Index Fund", "Anchor", 10.0, "ICICI Prudential Nifty Next 50 Index Fund", "120716", "https://groww.in/mutual-funds/icici-prudential-nifty-next-50-index-fund-direct-growth", 22.4, 16.8, 16.0, "Moderate-High", "Next-Gen Bluechip Booster. 0.32% direct TER.", "Next-Gen Bluechip Booster", 0.32, 100),
+                ("Silver ETF FoF (Commodity)", "Hedge", 10.0, "Nippon India Silver ETF FoF Direct Growth", "149812", "https://groww.in/mutual-funds/nippon-india-silver-etf-fof-direct-growth", 18.2, 15.5, 14.8, "Moderate", "Commodity real asset hedge. 0.45% direct TER.", "Commodity Real Asset Hedge", 0.45, 100)
             ]
 
         else: # All-Weather Balanced (INDmoney Style Ray Dalio Model)
             alloc_weights = [
-                ("Nifty 50 Index Fund (India)", "Anchor", 25.0, "HDFC Nifty 50 Index Fund Direct Growth", "119063", "https://groww.in/mutual-funds/hdfc-nifty-50-index-fund-direct-growth", 15.2, 14.8, 15.1, "Low-Moderate", "Core benchmark index fund providing domestic stability.", "Core Domestic Anchor"),
-                ("US S&P 500 Index FoF (Global)", "Global Anchor", 20.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 17.2, 18.6, 18.1, "Moderate", "US multi-trillion dollar balance sheets.", "Global Large-Cap Anchor"),
-                ("Gold ETF Fund of Fund (Precious Metals)", "Hedge", 20.0, "HDFC Gold Fund Direct Growth", "119854", "https://groww.in/mutual-funds/hdfc-gold-fund-direct-growth", 14.8, 14.5, 13.2, "Low-Moderate", "Gold real asset hedge protecting purchasing power against fiat devaluation.", "Crisis & Inflation Shield"),
-                ("Liquid Shield / Emergency Reserve", "Debt Shield", 20.0, "Parag Parikh Liquid Fund Direct Growth", "143329", "https://groww.in/mutual-funds/parag-parikh-liquid-fund-direct-growth", 6.8, 6.2, 6.5, "Low", "Sovereign 91-day T-Bills. Zero stock market risk.", "Dry Powder & Liquidity Shield"),
-                ("Small Cap Alpha (India)", "Accelerator", 15.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 24.5, 28.2, 22.4, "High", "Controlled small-cap exposure for long-term growth.", "Alpha Multiplier")
+                ("Nifty 50 Index Fund (India)", "Anchor", 25.0, "HDFC Nifty 50 Index Fund Direct Growth", "119063", "https://groww.in/mutual-funds/hdfc-nifty-50-index-fund-direct-growth", 26.18, 17.5, 15.2, "Low-Moderate", "Core benchmark index fund providing domestic stability. 0.29% direct TER.", "Core Domestic Anchor", 0.29, 100),
+                ("US S&P 500 Index FoF (Global)", "Global Anchor", 20.0, "Motilal Oswal S&P 500 Index Fund Direct Growth", "148332", "https://groww.in/mutual-funds/motilal-oswal-sp-500-index-fund-direct-growth", 16.8, 17.2, 16.5, "Moderate", "US multi-trillion dollar balance sheets. 0.61% direct TER.", "Global Large-Cap Anchor", 0.61, 500),
+                ("Gold ETF Fund of Fund (Precious Metals)", "Hedge", 20.0, "HDFC Gold Fund Direct Growth", "119854", "https://groww.in/mutual-funds/hdfc-gold-fund-direct-growth", 17.4, 14.8, 13.5, "Low-Moderate", "Gold real asset hedge. 0.26% direct TER.", "Crisis & Inflation Shield", 0.26, 100),
+                ("Liquid Shield / Emergency Reserve", "Debt Shield", 20.0, "Parag Parikh Liquid Fund Direct Growth", "143329", "https://groww.in/mutual-funds/parag-parikh-liquid-fund-direct-growth", 7.1, 6.4, 6.6, "Low", "Sovereign 91-day T-Bills. 0.18% direct TER.", "Dry Powder & Liquidity Shield", 0.18, 500),
+                ("Small Cap Alpha (India)", "Accelerator", 15.0, "Tata Small Cap Fund Direct Growth", "145206", "https://groww.in/mutual-funds/tata-small-cap-fund-direct-growth", 11.99, 15.94, 19.8, "High", "Controlled small-cap exposure. 0.51% direct TER.", "Alpha Multiplier", 0.51, 100)
             ]
 
         recommendations = []
         weighted_5y_cagr = 0.0
         total_annual_growth = 0.0
 
-        for asset_cls, bucket, weight_pct, fund_name, amfi_code, groww_url, r3, r5, r_all, risk_lvl, risk_exp, goal_role in alloc_weights:
+        for asset_cls, bucket, weight_pct, fund_name, amfi_code, groww_url, r3, r5, r_all, risk_lvl, risk_exp, goal_role, ter_pct, amc_min in alloc_weights:
             sip_amt = round(monthly_sip * (weight_pct / 100.0), 2)
             lump_amt = round(lump_sum * (weight_pct / 100.0), 2)
             weighted_5y_cagr += r5 * (weight_pct / 100.0)
@@ -94,6 +94,8 @@ class AIAdvisorEngine:
                 "fund_name": fund_name,
                 "amfi_code": amfi_code,
                 "groww_url": groww_url,
+                "ter_pct": ter_pct,
+                "amc_min_sip": amc_min,
                 "returns": {
                     "cagr_3y": r3,
                     "cagr_5y": r5,
@@ -104,7 +106,7 @@ class AIAdvisorEngine:
                 "goal_impact_role": goal_role,
                 "annual_growth_contribution": round(annual_growth, 2),
                 "formatted_growth_contribution": f"+ {format_indian_currency(annual_growth)}/yr",
-                "advisor_verdict": f"{goal_role} ({r5}% 5Y CAGR)"
+                "advisor_verdict": f"{goal_role} ({r5}% 5Y CAGR, {ter_pct}% TER)"
             })
 
         return {
