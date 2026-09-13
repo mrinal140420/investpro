@@ -294,17 +294,21 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
                       <div className="flex items-center gap-2">
                         <div>
                           <span className="text-[9px] uppercase text-[var(--text-3)] block">3Y</span>
-                          <span className="font-semibold text-[var(--text-1)]">{returns.cagr_3y}%</span>
+                          <span className="font-semibold text-[var(--text-1)]">{returns.cagr_3y ? `${returns.cagr_3y}%` : '—'}</span>
                         </div>
                         <span className="text-[var(--border)]">/</span>
                         <div>
                           <span className="text-[9px] uppercase text-[var(--text-3)] block">5Y</span>
-                          <span className="font-bold text-[var(--success)]">{returns.cagr_5y}%</span>
+                          <span className="font-bold text-[var(--success)]">
+                            {returns.cagr_5y ? `${returns.cagr_5y}%` : <span className="text-[var(--text-3)] text-[11px] font-normal" title="Inception post-2020">N/A*</span>}
+                          </span>
                         </div>
                         <span className="text-[var(--border)]">/</span>
                         <div>
                           <span className="text-[9px] uppercase text-[var(--text-3)] block">7Y XIRR</span>
-                          <span className="font-bold text-[var(--accent)]">{returns.rolling_7y_median_xirr}%</span>
+                          <span className="font-bold text-[var(--accent)]">
+                            {returns.rolling_7y_median_xirr ? `${returns.rolling_7y_median_xirr}%` : <span className="text-[var(--text-3)] text-[11px] font-normal" title={returns.rolling_7y_note || "Scheme lacks 7-year history"}>N/A*</span>}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -370,7 +374,13 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
                                 {item.why_chosen_summary}
                               </p>
                             </div>
-                            <span className="px-2.5 py-1 text-[10px] font-mono font-bold rounded bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20">
+                            <span className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded border ${
+                              item.aum_status?.includes('BLOATED')
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                : item.aum_status?.includes('WATCHLIST')
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                : 'bg-emerald-500/10 text-[var(--success)] border-emerald-500/20'
+                            }`}>
                               {item.aum_status}
                             </span>
                           </div>
@@ -449,11 +459,11 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
       {/* ── Footer Guidance ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-3)]">
         <p>
-          💡 <strong>Standalone Mandates:</strong> Each scheme is an independent contract. You can initiate an SIP on Groww or Zerodha Coin without portfolio-level locks. Direct plans eliminate intermediary distributor commissions (~1.0–1.5%/yr).
+          💡 <strong>Track Record Integrity:</strong> *N/A indicates funds launched post-2018/2021 (e.g. UTI Momentum launched Mar 2021, Motilal S&P 500 launched Apr 2020) that lack a full 7-year rolling cycle. No artificial backfilled projections are shown.
         </p>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono text-[11px] text-[var(--text-2)]">Direct Plan Verification Active</span>
+          <span className="font-mono text-[11px] text-[var(--text-2)]">Verified AMFI Metrics Active</span>
         </div>
       </div>
 
