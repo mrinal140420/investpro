@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Target, ShieldCheck, Zap, ExternalLink, PiggyBank, CreditCard, Sparkles, CheckCircle2, AlertCircle, ArrowUpRight, Clock, HelpCircle } from 'lucide-react';
 import { format_indian_currency } from '../utils/formatters';
 import { calculateGoalPlan } from '../utils/financialCalculations';
+import { apiFetchGoalPlan } from '../utils/apiClient';
 
 const PRESET_GOALS = [
   { name: 'MacBook Pro / Tech Upgrade', amount: 180000, months: 10 },
@@ -43,36 +44,16 @@ export default function GoalSlicingCard({ userParams }) {
     setLoading(true);
     const targetDate = calculateTargetDate(targetMonths);
     try {
-      const res = await fetch('/api/v1/goals/reverse-emi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          goal_name: goalName,
-          target_amount: parseFloat(targetAmount) || 100000,
-          target_date: targetDate,
-          current_saved: parseFloat(currentSaved) || 0,
-          step_up_pct: parseFloat(stepUpPct) || 0.10,
-          step_up_frequency: stepUpFreq,
-          estimated_loan_apr_pct: 14.0
-        })
-      }).catch(() => null);
-
-      if (res && res.ok) {
-        const data = await res.json();
-        setGoalResult(data);
-      } else {
-        // High-precision Client-side Mathematical Fallback
-        const fallback = calculateGoalPlan({
-          goal_name: goalName,
-          target_amount: parseFloat(targetAmount) || 100000,
-          target_date: targetDate,
-          current_saved: parseFloat(currentSaved) || 0,
-          step_up_pct: parseFloat(stepUpPct) || 0.10,
-          step_up_frequency: stepUpFreq,
-          estimated_loan_apr_pct: 14.0
-        });
-        setGoalResult(fallback);
-      }
+      const plan = await apiFetchGoalPlan({
+        goal_name: goalName,
+        target_amount: parseFloat(targetAmount) || 100000,
+        target_date: targetDate,
+        current_saved: parseFloat(currentSaved) || 0,
+        step_up_pct: parseFloat(stepUpPct) || 0.10,
+        step_up_frequency: stepUpFreq,
+        estimated_loan_apr_pct: 14.0
+      });
+      setGoalResult(plan);
     } catch (err) {
       console.warn('Network issue in goal plan, calculating locally:', err);
       const fallback = calculateGoalPlan({

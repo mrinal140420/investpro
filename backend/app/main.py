@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from fastapi import FastAPI, HTTPException, Depends, Body, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import date
