@@ -1,10 +1,7 @@
 /**
  * InvestPro — Official MFCentral & CAS Statement Client-Side Parser
  * Zero external paid APIs. 100% in-browser deterministic parsing & normalization.
- * Handles official CAMS & KFintech Detailed CAS exports from MFCentral:
- * - Statement of Account (SoA) physical folios with transactions
- * - Demat Holdings (CDSL / NSDL depositories without transactional history)
- * - Free-form table summaries across multi-page statements
+ * Handles official CAMS & KFintech Detailed CAS exports from MFCentral.
  */
 
 import { format_indian_currency } from './formatters.js';
@@ -14,7 +11,7 @@ export const STORAGE_KEY_MFCENTRAL = 'investpro_mfcentral_session';
 // Taxonomy rules to classify Indian Mutual Funds into InvestPro Barbell Buckets
 const ASSET_CLASS_RULES = [
   { regex: /(s&p\s*500|nasdaq|us\s*equity|global|international|world|overseas|greater\s*china|euro|emerging\s*markets)/i, bucket: 'Global Anchor', category: 'Global Equity' },
-  { regex: /(gold|silver|sovereign\s*gold|sgb|precious)/i, bucket: 'Hedge', category: 'Precious Metals' },
+  { regex: /(gold|silver|sovereign\s*gold|sgb|precious)/i, bucket: 'Hedge', category: 'Precious Metals / Gold' },
   { regex: /(liquid|overnight|money\s*market|arbitrage|debt|gilt|treasury|short\s*duration|banking\s*&\s*psu|corporate\s*bond|savings\s*fund|ultra\s*short|low\s*duration)/i, bucket: 'Debt Shield', category: 'Liquid & Arbitrage' },
   { regex: /(small\s*cap|smallcap|micro\s*cap|nifty\s*smallcap)/i, bucket: 'Accelerator', category: 'Small Cap Alpha' },
   { regex: /(mid\s*cap|midcap|nifty\s*midcap|emerging\s*equities)/i, bucket: 'Accelerator', category: 'Mid Cap Growth' },
@@ -63,268 +60,197 @@ function parseNum(val) {
   if (val === undefined || val === null) return 0;
   const cleaned = String(val).replace(/,/g, '').replace(/\(/g, '-').replace(/\)/g, '').trim();
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : Math.abs(num);
+  return isNaN(num) ? 0 : num;
 }
 
 /**
  * Parses raw text copied or extracted from an MFCentral / CAMS / KFintech statement.
- * Supports SoA, Demat, and Table formats across multi-page statements.
  */
 export function parseMFCentralText(rawText) {
   if (!rawText || typeof rawText !== 'string') {
     throw new Error('No statement content provided for parsing.');
   }
 
-  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
   const folios = [];
 
-  let currentFolio = null;
-  let currentScheme = null;
-  let currentIsin = null;
-  let currentUnits = 0;
-  let currentNav = 0;
-  let currentValuation = 0;
-  let currentTransactions = [];
-  let isDematSection = false;
+  // Regex 1: Match Closing Unit Balance line (Standard across all MFCentral Detailed CAS reports)
+  // E.g. "Closing Unit Balance: 1.609 Nav as on 11-SEP-2026: INR 61.0345 Valuation on 14-Sep-2026 : INR 98.20"
+  const closingRegex = /Closing\s*Unit\s*Balance[:\s]+([\d,]+\.?\d*)\s+Nav\s*as\s*on\s*[^:]+:\s*(?:INR\s*)?([\d,]+\.?\d*)\s+Valuation\s*on\s*[^:]+:\s*(?:INR\s*)?([\d,]+\.?\d*)/gi;
 
-  const folioRegex = /(?:Folio\s*(?:No|Number)?|Account\s*No|Demat\s*A\/c|DP\s*ID|Client\s*ID)[:\s\-]+([A-Z0-9\/\-]+)/i;
-  const isinRegex = /(INF[A-Z0-9]{9})/i;
-  const txLineRegex = /(\d{2}[-\/][A-Za-z0-9]{3,}[-\/]\d{2,4})\s+([A-Za-z\s\-\/\.]+?)\s+([\(\-]?[\d,]+\.?\d*[\)]?)\s+([\(\-]?[\d,]+\.?\d*[\)]?)\s+([\d,]+\.?\d*)/;
+  // Regex 2: Match Folio No
+  const folioRegex = /FOLIO\s*(?:NO|Number)?[:\s]+([0-9\/\-]+)/gi;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  // Regex 3: Match ISIN
+  const isinRegex = /ISIN[:\s]+(INF[A-Z0-9]{9})/gi;
 
-    // Check for Demat vs SoA section markers
-    if (line.toUpperCase().includes('DEMAT HOLDINGS') || line.toUpperCase().includes('DEMAT SUMMARY')) {
-      isDematSection = true;
+  // Regex 4: Match Transaction Lines
+  // E.g. "04-SEP-2026 Purchase (Continuous Offer) 100.00 1.609 62.14 1.609"
+  const txRegex = /(\d{2}[-\/][A-Za-z0-9]{3,}[-\/]\d{2,4})\s+([A-Za-z\s\-\/\.\(\)]+?)\s+([\(\-]?[\d,]+\.?\d*[\)]?)\s+([\(\-]?[\d,]+\.?\d*[\)]?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)/g;
+
+  // Segment statement by folio / scheme blocks
+  // In MFCentral, each scheme has a section ending with "Closing Unit Balance: ..."
+  let closingMatch;
+  let lastIndex = 0;
+
+  while ((closingMatch = closingRegex.exec(rawText)) !== null) {
+    const blockText = rawText.substring(lastIndex, closingMatch.index + closingMatch[0].length);
+    lastIndex = closingMatch.index + closingMatch[0].length;
+
+    const closingUnits = parseNum(closingMatch[1]);
+    const closingNav = parseNum(closingMatch[2]);
+    const closingValuation = parseNum(closingMatch[3]);
+
+    // Extract Folio
+    const fM = blockText.match(/FOLIO\s*(?:NO|Number)?[:\s]+([0-9\/\-]+)/i);
+    const folioNo = fM ? fM[1].trim() : `FOLIO-${folios.length + 1}`;
+
+    // Extract ISIN
+    const isinM = blockText.match(/ISIN[:\s]+(INF[A-Z0-9]{9})/i);
+    const isin = isinM ? isinM[1].toUpperCase() : null;
+
+    // Extract Scheme Name
+    let schemeName = 'Indian Mutual Fund';
+    const schemeM = blockText.match(/(?:FOLIO NO:[^\n]+\n)?([A-Za-z0-9\s\-]+(?:Fund|Plan|Growth|Index|ETF)[A-Za-z0-9\s\-]*)\s*(?:\(Advisor|$)/i);
+    if (schemeM) {
+      schemeName = schemeM[1].replace(/FOLIO\s*NO:[^\n]+/i, '').replace(/===.*?===/g, '').trim();
+    } else {
+      // Fallback line-by-line scheme candidate
+      const lines = blockText.split('\n').map(l => l.trim());
+      const cand = lines.find(l => 
+        (l.includes('Fund') || l.includes('Plan') || l.includes('Growth') || l.includes('Direct')) &&
+        !l.includes('Consolidated') && !l.includes('Statement') && l.length > 8
+      );
+      if (cand) schemeName = cand.replace(/\s*-\s*ISIN:.*$/i, '').trim();
     }
 
-    // Check for Folio / Demat ID header
-    const fMatch = line.match(folioRegex);
-    if (fMatch) {
-      if (currentScheme && (currentTransactions.length > 0 || currentUnits > 0 || currentValuation > 0)) {
-        commitFolioBlock();
-      }
-      currentFolio = fMatch[1].trim();
-    }
+    // Extract Transactions in this block
+    let txM;
+    let netInvested = 0;
+    let hasSip = false;
+    let sipAmount = 0;
+    let txCount = 0;
 
-    // Check for ISIN
-    const isinMatch = line.match(isinRegex);
-    if (isinMatch) {
-      currentIsin = isinMatch[1].toUpperCase();
-    }
-
-    // Check for Scheme Name Header
-    const isSchemeLine =
-      (line.includes('Fund') || line.includes('Plan') || line.includes('Growth') || line.includes('Direct') || line.includes('Regular') || line.includes('ETF') || line.includes('Index')) &&
-      line.length > 10 &&
-      !/^\d{2}[-\/]/.test(line) &&
-      !line.toLowerCase().includes('consolidated account statement') &&
-      !line.toLowerCase().includes('page ') &&
-      !line.toLowerCase().includes('no folios found');
-
-    if (isSchemeLine) {
-      if (currentScheme && (currentTransactions.length > 0 || currentUnits > 0 || currentValuation > 0)) {
-        commitFolioBlock();
-      }
-      currentScheme = line.replace(/\s*-\s*ISIN:.*$/i, '').replace(/===.*?===/g, '').trim();
-    }
-
-    // Check for direct Demat holding balance line: e.g. "Units: 1420.45 NAV: 138.85 Market Value: 197229"
-    // Or plain numbers: e.g. "1420.450 138.8500 197229.00"
-    const numberMatches = line.match(/([\d,]+\.\d+)/g);
-    if (numberMatches && numberMatches.length >= 2 && currentScheme) {
-      const nums = numberMatches.map(parseNum);
-      // Usually: [Units, NAV, Valuation] or [Cost, Units, NAV, Valuation]
-      if (nums.length >= 3) {
-        // Largest is typically valuation
-        const sorted = [...nums].sort((a, b) => b - a);
-        const maxVal = sorted[0];
-        if (maxVal > 100) {
-          currentValuation = maxVal;
-          // Find units and nav
-          const remaining = nums.filter(n => n !== maxVal);
-          if (remaining.length >= 2) {
-            currentUnits = remaining[0];
-            currentNav = remaining[1];
-          }
-        }
-      } else if (nums.length === 2 && currentUnits === 0) {
-        currentUnits = nums[0];
-        currentNav = nums[1];
-        currentValuation = Math.round(currentUnits * currentNav);
-      }
-    }
-
-    // Check for standard transaction line
-    const txMatch = line.match(txLineRegex);
-    if (txMatch) {
-      const txDate = txMatch[1].trim();
-      const desc = txMatch[2].trim().toUpperCase();
-      const amount = parseNum(txMatch[3]);
-      const units = parseNum(txMatch[4]);
-      let nav = parseNum(txMatch[5]);
-
-      if (nav === 0 && units > 0 && amount > 0) {
-        nav = Math.round((amount / units) * 10000) / 10000;
-      }
-
-      const isSip = desc.includes('SIP') || desc.includes('SYSTEMATIC');
+    while ((txM = txRegex.exec(blockText)) !== null) {
+      txCount++;
+      const desc = txM[2].trim().toUpperCase();
+      const amt = parseNum(txM[3]);
       const isRedemption = desc.includes('REDEMPT') || desc.includes('SALE') || desc.includes('SWITCH OUT');
+      const isSip = desc.includes('SIP') || desc.includes('SYSTEMATIC');
 
-      currentTransactions.push({
-        date: txDate,
-        desc,
-        amount,
-        units: isRedemption ? -units : units,
-        nav,
-        isSip,
-        isRedemption
-      });
-    }
-  }
-
-  // Flush final block
-  commitFolioBlock();
-
-  function commitFolioBlock() {
-    if (!currentScheme && currentTransactions.length === 0 && currentValuation === 0 && currentUnits === 0) {
-      return;
+      if (!isRedemption) {
+        netInvested += amt;
+        if (isSip) {
+          hasSip = true;
+          sipAmount = amt;
+        }
+      } else {
+        netInvested = Math.max(0, netInvested - amt);
+      }
     }
 
-    const schemeName = currentScheme || 'Indian Mutual Fund';
-    const folioNo = currentFolio || (currentIsin ? `DEMAT-${currentIsin}` : `FOLIO-${folios.length + 1}`);
+    if (netInvested === 0 && closingValuation > 0) {
+      netInvested = closingValuation;
+    }
+
+    const curVal = closingValuation > 0 ? closingValuation : Math.round(closingUnits * closingNav * 100) / 100;
+    const pnl = Math.round((curVal - netInvested) * 100) / 100;
+    const pnlPct = netInvested > 0 ? Math.round(((curVal - netInvested) / netInvested) * 1000) / 10 : 0;
+
     const isReg = isRegularPlan(schemeName);
     const { bucket, category } = classifySchemeBucket(schemeName);
     const rta = detectRTA(schemeName, folioNo);
 
-    let netUnits = currentUnits;
-    let netInvested = 0;
-    let latestNav = currentNav;
-    let hasSip = false;
-    let sipAmount = 0;
+    folios.push({
+      id: `mf-${folios.length + 1}`,
+      folio_number: folioNo,
+      scheme_name: schemeName,
+      isin: isin,
+      units: closingUnits,
+      nav: closingNav,
+      current_value: curVal,
+      invested_amount: netInvested,
+      unrealized_pnl: pnl,
+      unrealized_pnl_pct: pnlPct,
+      is_regular_plan: isReg,
+      bucket,
+      category,
+      rta,
+      sip_active: hasSip,
+      monthly_sip_amount: sipAmount,
+      transaction_count: txCount,
+      holding_mode: 'DIRECT_MFCENTRAL_CAS'
+    });
+  }
 
-    if (currentTransactions.length > 0) {
-      netUnits = 0;
-      for (const tx of currentTransactions) {
-        netUnits += tx.units;
-        if (!tx.isRedemption) {
-          netInvested += tx.amount;
-          if (tx.isSip) {
-            hasSip = true;
-            sipAmount = tx.amount;
-          }
-        } else {
-          netInvested = Math.max(0, netInvested - tx.amount);
-        }
-        if (tx.nav > 0) latestNav = tx.nav;
+  // Fallback 1: If standard Closing Unit Balance format not found, parse line by line
+  if (folios.length === 0) {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    let currentFolio = null;
+    let currentScheme = null;
+    let currentIsin = null;
+    let currentUnits = 0;
+    let currentNav = 0;
+    let currentVal = 0;
+    let currentCost = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      const fMatch = line.match(/FOLIO\s*(?:NO|Number)?[:\s]+([0-9\/\-]+)/i);
+      if (fMatch) currentFolio = fMatch[1].trim();
+
+      const isinMatch = line.match(/(INF[A-Z0-9]{9})/i);
+      if (isinMatch) currentIsin = isinMatch[1].toUpperCase();
+
+      if (
+        (line.includes('Fund') || line.includes('Plan') || line.includes('Growth') || line.includes('Direct')) &&
+        line.length > 10 &&
+        !/^\d{2}[-\/]/.test(line) &&
+        !line.toLowerCase().includes('consolidated')
+      ) {
+        currentScheme = line.replace(/\s*-\s*ISIN:.*$/i, '').replace(/===.*?===/g, '').trim();
+      }
+
+      // Check numbers in line
+      const nums = (line.match(/[\d,]+\.\d+/g) || []).map(parseNum);
+      if (nums.length >= 3 && currentScheme) {
+        currentCost = nums[0];
+        currentUnits = nums[1];
+        currentNav = nums[2];
+        currentVal = nums.length >= 4 ? nums[3] : Math.round(currentUnits * currentNav * 100) / 100;
       }
     }
 
-    netUnits = Math.round(netUnits * 1000) / 1000;
-
-    let curVal = currentValuation;
-    if (curVal === 0 && netUnits > 0) {
-      curVal = Math.round(netUnits * (latestNav || 100));
-    }
-    if (netInvested === 0 && curVal > 0) {
-      netInvested = Math.round(curVal * 0.82); // Standard baseline estimate when only balance is reported
-    }
-
-    if (curVal > 0 || netUnits > 0.001) {
-      const pnl = curVal - netInvested;
-      const pnlPct = netInvested > 0 ? Math.round((pnl / netInvested) * 1000) / 10 : 20.0;
+    if (currentScheme && (currentUnits > 0 || currentVal > 0)) {
+      const isReg = isRegularPlan(currentScheme);
+      const { bucket, category } = classifySchemeBucket(currentScheme);
+      const rta = detectRTA(currentScheme, currentFolio || '');
 
       folios.push({
         id: `mf-${folios.length + 1}`,
-        folio_number: folioNo,
-        scheme_name: schemeName,
+        folio_number: currentFolio || 'FOLIO-1',
+        scheme_name: currentScheme,
         isin: currentIsin,
-        units: netUnits > 0 ? netUnits : 100,
-        nav: latestNav || (netUnits > 0 ? Math.round((curVal / netUnits) * 100) / 100 : 100),
-        current_value: curVal,
-        invested_amount: netInvested > 0 ? netInvested : curVal,
-        unrealized_pnl: pnl,
-        unrealized_pnl_pct: pnlPct,
+        units: currentUnits,
+        nav: currentNav,
+        current_value: currentVal,
+        invested_amount: currentCost > 0 ? currentCost : currentVal,
+        unrealized_pnl: Math.round((currentVal - (currentCost > 0 ? currentCost : currentVal)) * 100) / 100,
+        unrealized_pnl_pct: currentCost > 0 ? Math.round(((currentVal - currentCost) / currentCost) * 1000) / 10 : 0,
         is_regular_plan: isReg,
         bucket,
         category,
         rta,
-        sip_active: hasSip,
-        monthly_sip_amount: sipAmount,
-        holding_mode: isDematSection ? 'DEMAT_CDSL_NSDL' : 'SOA_DIRECT_FOLIO'
+        sip_active: false,
+        monthly_sip_amount: 0,
       });
-    }
-
-    resetFolioState();
-  }
-
-  function resetFolioState() {
-    currentFolio = null;
-    currentScheme = null;
-    currentIsin = null;
-    currentUnits = 0;
-    currentNav = 0;
-    currentValuation = 0;
-    currentTransactions = [];
-  }
-
-  // Failsafe Scanner: If no folios found yet, search by ISIN occurrences across the entire text
-  if (folios.length === 0) {
-    const isinGlobalRegex = /(INF[A-Z0-9]{9})/g;
-    const isinMatches = rawText.match(isinGlobalRegex);
-
-    if (isinMatches && isinMatches.length > 0) {
-      const uniqueIsins = [...new Set(isinMatches)];
-
-      for (let i = 0; i < uniqueIsins.length; i++) {
-        const isin = uniqueIsins[i];
-        // Find lines surrounding this ISIN
-        const isinIndex = rawText.indexOf(isin);
-        const snippet = rawText.substring(Math.max(0, isinIndex - 250), Math.min(rawText.length, isinIndex + 300));
-        
-        // Extract numbers in snippet
-        const numbers = (snippet.match(/[\d,]+\.\d+/g) || []).map(parseNum).filter(n => n > 0);
-        const maxNum = numbers.length > 0 ? Math.max(...numbers) : 50000;
-        const valuation = maxNum > 100 ? maxNum : 50000;
-        
-        // Infer scheme name from snippet
-        const snippetLines = snippet.split('\n').map(s => s.trim());
-        const schemeCandidate = snippetLines.find(l => 
-          (l.includes('Fund') || l.includes('Plan') || l.includes('Growth') || l.includes('Direct') || l.includes('Index')) &&
-          !l.includes('Consolidated') && l.length > 10
-        ) || `Mutual Fund (${isin})`;
-
-        const isReg = isRegularPlan(schemeCandidate);
-        const { bucket, category } = classifySchemeBucket(schemeCandidate);
-
-        folios.push({
-          id: `mf-${folios.length + 1}`,
-          folio_number: `DEMAT-${isin}`,
-          scheme_name: schemeCandidate.replace(/\s*-\s*ISIN:.*$/i, '').trim(),
-          isin: isin,
-          units: numbers[0] || 100,
-          nav: numbers[1] || 100,
-          current_value: Math.round(valuation),
-          invested_amount: Math.round(valuation * 0.82),
-          unrealized_pnl: Math.round(valuation * 0.18),
-          unrealized_pnl_pct: 22.0,
-          is_regular_plan: isReg,
-          bucket,
-          category,
-          rta: detectRTA(schemeCandidate, isin),
-          sip_active: false,
-          monthly_sip_amount: 0,
-          holding_mode: 'DEMAT_CDSL_NSDL'
-        });
-      }
     }
   }
 
   if (folios.length === 0) {
     throw new Error(
-      'MFCentral CAS Parsed: SoA section showed "No Folios Found", and no Demat mutual fund holdings or ISINs were detected. ' +
-      'If your mutual funds are on the last page, please copy the text from that page and paste it into the "Quick Text Paste" tab.'
+      'Could not detect valid mutual fund holding records in this statement. ' +
+      'Please verify that your statement contains folio and unit balance records.'
     );
   }
 
@@ -332,7 +258,7 @@ export function parseMFCentralText(rawText) {
 }
 
 /**
- * Assembles the verified MFCentral portfolio session payload
+ * Assembles the verified MFCentral portfolio session payload with exact currency formatting.
  */
 export function normalizeMFCentralPayload(folios) {
   let totalInvested = 0;
@@ -354,16 +280,36 @@ export function normalizeMFCentralPayload(folios) {
       directPlanCount++;
     }
 
+    const fmtVal = item.current_value < 1000 
+      ? `₹${item.current_value.toFixed(2)}` 
+      : format_indian_currency(Math.round(item.current_value));
+
+    const fmtPnl = item.unrealized_pnl >= 0 
+      ? `+₹${Math.abs(item.unrealized_pnl).toFixed(2)}` 
+      : `-₹${Math.abs(item.unrealized_pnl).toFixed(2)}`;
+
     return {
       ...item,
       id: item.id || `mf-${idx + 1}`,
-      formatted_value: format_indian_currency(item.current_value),
-      formatted_pnl: (item.unrealized_pnl >= 0 ? '+' : '') + format_indian_currency(item.unrealized_pnl),
+      formatted_value: fmtVal,
+      formatted_pnl: fmtPnl,
     };
   });
 
   const overallPnlPct = totalInvested > 0 ? Math.round((totalPnl / totalInvested) * 1000) / 10 : 0;
   const directPurityPct = folios.length > 0 ? Math.round((directPlanCount / folios.length) * 100) : 100;
+
+  const fmtTotalVal = totalCurrentValuation < 1000 
+    ? `₹${totalCurrentValuation.toFixed(2)}` 
+    : format_indian_currency(Math.round(totalCurrentValuation));
+
+  const fmtTotalInv = totalInvested < 1000 
+    ? `₹${totalInvested.toFixed(2)}` 
+    : format_indian_currency(Math.round(totalInvested));
+
+  const fmtTotalPnl = totalPnl >= 0 
+    ? `+₹${Math.abs(totalPnl).toFixed(2)}` 
+    : `-₹${Math.abs(totalPnl).toFixed(2)}`;
 
   return {
     is_connected: true,
@@ -375,12 +321,12 @@ export function normalizeMFCentralPayload(folios) {
     regular_plan_count: regularPlanCount,
     direct_purity_pct: directPurityPct,
     has_regular_leakage: regularPlanCount > 0,
-    total_invested: Math.round(totalInvested),
-    formatted_total_invested: format_indian_currency(Math.round(totalInvested)),
-    current_valuation: Math.round(totalCurrentValuation),
-    formatted_current_valuation: format_indian_currency(Math.round(totalCurrentValuation)),
-    total_pnl: Math.round(totalPnl),
-    formatted_total_pnl: (totalPnl >= 0 ? '+' : '') + format_indian_currency(Math.round(totalPnl)),
+    total_invested: Math.round(totalInvested * 100) / 100,
+    formatted_total_invested: fmtTotalInv,
+    current_valuation: Math.round(totalCurrentValuation * 100) / 100,
+    formatted_current_valuation: fmtTotalVal,
+    total_pnl: Math.round(totalPnl * 100) / 100,
+    formatted_total_pnl: `${fmtTotalPnl} (${overallPnlPct}%)`,
     total_pnl_pct: overallPnlPct,
     active_monthly_sip: activeMonthlySip,
     formatted_active_sip: activeMonthlySip > 0 ? `${format_indian_currency(activeMonthlySip)}/mo` : 'None detected',
