@@ -1,8 +1,19 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export default function Navbar({ theme, setTheme, onOpenCasModal, onOpenAaModal, aaSession }) {
+export default function Navbar({
+  theme,
+  setTheme,
+  onOpenMFCentralModal,
+  mfcentralSession,
+  onOpenCasModal,
+  onOpenAaModal,
+  aaSession
+}) {
   const isLight = theme === 'light';
+  const activeSession = mfcentralSession || aaSession;
+  const handleOpenSync = onOpenMFCentralModal || onOpenCasModal || onOpenAaModal;
+
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 50,
@@ -53,38 +64,27 @@ export default function Navbar({ theme, setTheme, onOpenCasModal, onOpenAaModal,
 
         {/* Action buttons & Theme toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* RBI Account Aggregator Button */}
+          {/* Official MFCentral RTA Sync Button */}
           <button
-            onClick={onOpenAaModal}
+            onClick={handleOpenSync}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-              aaSession
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              activeSession && activeSession.is_connected
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-sm'
+                : 'btn-gold shadow-sm'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${aaSession ? 'bg-emerald-400 animate-pulse' : 'bg-indigo-400'}`} />
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+            <span className={`w-2 h-2 rounded-full ${activeSession && activeSession.is_connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={activeSession && activeSession.is_connected ? 'text-emerald-400' : 'text-[var(--gold)]'}>
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
             <span className="hidden sm:inline">
-              {aaSession ? `RBI AA: ${aaSession.formatted_current_valuation}` : 'Sync via RBI AA'}
+              {activeSession && activeSession.is_connected
+                ? `MFCentral: ${activeSession.formatted_current_valuation || activeSession.current_valuation}`
+                : 'Sync MFCentral (Official RTA)'}
             </span>
             <span className="sm:hidden">
-              {aaSession ? 'AA Synced' : 'RBI AA'}
+              {activeSession && activeSession.is_connected ? 'MFCentral' : 'Sync RTA'}
             </span>
-          </button>
-
-          {/* CAS PDF Ingestion */}
-          <button
-            onClick={onOpenCasModal}
-            className="btn-gold flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            <span className="hidden sm:inline">Import CAS</span>
           </button>
 
           {/* Theme Toggle */}

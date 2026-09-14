@@ -13,7 +13,9 @@ import BehavioralShield from './components/BehavioralShield';
 import DirectiveCommandCenter from './components/DirectiveCommandCenter';
 import CasUploadModal from './components/CasUploadModal';
 import AccountAggregatorModal from './components/AccountAggregatorModal';
+import MFCentralSyncModal from './components/MFCentralSyncModal';
 import { getSavedAASession } from './utils/accountAggregatorClient';
+import { getSavedMFCentralSession } from './utils/mfcentralParser';
 import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock } from 'lucide-react';
 import { getEnrichedFundUniverse } from './utils/financialCalculations';
 import { apiFetchTrajectory, apiFetchFundUniverse, calculateTrajectoryAnalysis } from './utils/apiClient';
@@ -91,9 +93,8 @@ function Skeleton({ height }) {
 // ── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [activeTab, setActiveTab] = useState('barbell'); // 'barbell' | 'behavioral_shield' | 'directive_center' | 'reverse_emi' | 'tax_milestones'
-  const [isCasModalOpen, setIsCasModalOpen] = useState(false);
-  const [isAaModalOpen, setIsAaModalOpen] = useState(false);
-  const [aaSession, setAaSession] = useState(() => getSavedAASession());
+  const [isMFCentralModalOpen, setIsMFCentralModalOpen] = useState(false);
+  const [mfcentralSession, setMfCentralSession] = useState(() => getSavedMFCentralSession());
 
   // Read initial theme from localStorage (set by index.html init script)
   const [theme, setTheme] = useState(() => {
@@ -125,21 +126,27 @@ export default function App() {
     }
   };
 
-  // Params — clean Indian mutual fund defaults
-  const [params, setParams] = useState({
-    dob:                    '2005-04-14',
-    current_ctc_lpa:        12.0,
-    monthly_investable_sip: 25000.0,
-    lump_sum_amount:        50000.0,
-    annual_step_up_pct:     0.10,
-    current_portfolio:      0.0,
-    near_target_amount:     5000000.0,
-    near_target_date:       '2028-12-31',
-    far_target_amount:      30000000.0,
-    far_target_date:        '2035-04-14',
-    assumed_cagr:           0.15,
-    savings_rate:           0.30,
-    risk_mode:              'global_multi_asset',
+  // Params — clean Indian mutual fund defaults (hydrated with real MFCentral session if present)
+  const [params, setParams] = useState(() => {
+    const savedMf = getSavedMFCentralSession();
+    const initValuation = savedMf && savedMf.current_valuation ? savedMf.current_valuation : 0.0;
+    const initSip = savedMf && savedMf.active_monthly_sip > 0 ? savedMf.active_monthly_sip : 25000.0;
+
+    return {
+      dob:                    '2005-04-14',
+      current_ctc_lpa:        12.0,
+      monthly_investable_sip: initSip,
+      lump_sum_amount:        50000.0,
+      annual_step_up_pct:     0.10,
+      current_portfolio:      initValuation,
+      near_target_amount:     5000000.0,
+      near_target_date:       '2028-12-31',
+      far_target_amount:      30000000.0,
+      far_target_date:        '2035-04-14',
+      assumed_cagr:           0.15,
+      savings_rate:           0.30,
+      risk_mode:              'global_multi_asset',
+    };
   });
 
   const [trajectoryData, setTrajectoryData] = useState(null);
@@ -229,9 +236,8 @@ export default function App() {
         <Navbar
           theme={theme}
           setTheme={handleToggleTheme}
-          onOpenCasModal={() => setIsCasModalOpen(true)}
-          onOpenAaModal={() => setIsAaModalOpen(true)}
-          aaSession={aaSession}
+          onOpenMFCentralModal={() => setIsMFCentralModalOpen(true)}
+          mfcentralSession={mfcentralSession}
         />
 
         <main
@@ -413,21 +419,12 @@ export default function App() {
             />
           )}
 
-          {/* CAS PDF Ingestion Modal */}
-          <CasUploadModal
-            isOpen={isCasModalOpen}
-            onClose={() => setIsCasModalOpen(false)}
-            onIngestionComplete={(data) => {
-              console.log('CAS Statement Imported Successfully:', data);
-            }}
-          />
-
-          {/* RBI Account Aggregator Live Sync Modal */}
-          <AccountAggregatorModal
-            isOpen={isAaModalOpen}
-            onClose={() => setIsAaModalOpen(false)}
+          {/* Official MFCentral RTA Live Sync Modal */}
+          <MFCentralSyncModal
+            isOpen={isMFCentralModalOpen}
+            onClose={() => setIsMFCentralModalOpen(false)}
             onSyncComplete={(session) => {
-              setAaSession(session);
+              setMfCentralSession(session);
               if (session && session.current_valuation > 0) {
                 setParams(prev => ({
                   ...prev,
@@ -437,7 +434,7 @@ export default function App() {
               }
             }}
             onDisconnect={() => {
-              setAaSession(null);
+              setMfCentralSession(null);
               setParams(prev => ({
                 ...prev,
                 current_portfolio: 0.0
