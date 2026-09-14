@@ -12,6 +12,8 @@ import EmptyState from './components/EmptyState';
 import BehavioralShield from './components/BehavioralShield';
 import DirectiveCommandCenter from './components/DirectiveCommandCenter';
 import CasUploadModal from './components/CasUploadModal';
+import AccountAggregatorModal from './components/AccountAggregatorModal';
+import { getSavedAASession } from './utils/accountAggregatorClient';
 import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock } from 'lucide-react';
 import { getEnrichedFundUniverse } from './utils/financialCalculations';
 import { apiFetchTrajectory, apiFetchFundUniverse, calculateTrajectoryAnalysis } from './utils/apiClient';
@@ -90,6 +92,8 @@ function Skeleton({ height }) {
 export default function App() {
   const [activeTab, setActiveTab] = useState('barbell'); // 'barbell' | 'behavioral_shield' | 'directive_center' | 'reverse_emi' | 'tax_milestones'
   const [isCasModalOpen, setIsCasModalOpen] = useState(false);
+  const [isAaModalOpen, setIsAaModalOpen] = useState(false);
+  const [aaSession, setAaSession] = useState(() => getSavedAASession());
 
   // Read initial theme from localStorage (set by index.html init script)
   const [theme, setTheme] = useState(() => {
@@ -226,6 +230,8 @@ export default function App() {
           theme={theme}
           setTheme={handleToggleTheme}
           onOpenCasModal={() => setIsCasModalOpen(true)}
+          onOpenAaModal={() => setIsAaModalOpen(true)}
+          aaSession={aaSession}
         />
 
         <main
@@ -413,6 +419,29 @@ export default function App() {
             onClose={() => setIsCasModalOpen(false)}
             onIngestionComplete={(data) => {
               console.log('CAS Statement Imported Successfully:', data);
+            }}
+          />
+
+          {/* RBI Account Aggregator Live Sync Modal */}
+          <AccountAggregatorModal
+            isOpen={isAaModalOpen}
+            onClose={() => setIsAaModalOpen(false)}
+            onSyncComplete={(session) => {
+              setAaSession(session);
+              if (session && session.current_valuation > 0) {
+                setParams(prev => ({
+                  ...prev,
+                  current_portfolio: session.current_valuation,
+                  monthly_investable_sip: session.active_monthly_sip > 0 ? session.active_monthly_sip : prev.monthly_investable_sip
+                }));
+              }
+            }}
+            onDisconnect={() => {
+              setAaSession(null);
+              setParams(prev => ({
+                ...prev,
+                current_portfolio: 0.0
+              }));
             }}
           />
 
