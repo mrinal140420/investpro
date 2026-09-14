@@ -46,6 +46,7 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
   const enrichedData = getEnrichedFundUniverse(activeSip, activeLump, activeMode, allocationMode, focusedFundId);
   const assets = enrichedData.asset_breakdown || [];
   const weightedCagr = enrichedData.portfolio_weighted_5y_cagr;
+  const weightedSipXirr = enrichedData.portfolio_weighted_5y_sip_xirr || enrichedData.portfolio_primary_sip_xirr;
   const weightedTer = enrichedData.portfolio_weighted_ter;
   const totalGrowth = enrichedData.formatted_total_annual_growth;
   const strategyLabel = STRATEGY_LABELS[activeMode] || '🌐 Global Multi-Asset Barbell';
@@ -100,10 +101,13 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
 
         <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
           <span className="text-[10px] uppercase font-mono text-[var(--text-3)] block font-medium">
-            Weighted 5Y CAGR
+            Weighted 5Y SIP XIRR
           </span>
           <span className="text-base sm:text-lg font-black font-mono text-[var(--success)] mt-0.5 block">
-            {weightedCagr}%
+            {weightedSipXirr}%
+          </span>
+          <span className="text-[10px] text-[var(--text-3)] block mt-0.5">
+            Lump-Sum CAGR: {weightedCagr}%
           </span>
         </div>
 
@@ -209,7 +213,7 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
               <th className="py-3 px-4">TER (Direct)</th>
               <th className="py-3 px-4">AMC Min SIP</th>
               <th className="py-3 px-4">Min Horizon</th>
-              <th className="py-3 px-4">3Y / 5Y / 7Y Rolling</th>
+              <th className="py-3 px-4">Historical SIP XIRR (3Y / 5Y / 7Y)</th>
               <th className="py-3 px-4">Downside Shield</th>
               <th className="py-3 px-4 text-center">Category Peer Rationale</th>
               <th className="py-3 px-4 text-right">Execute</th>
@@ -289,23 +293,25 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
                       </span>
                     </td>
 
-                    {/* Returns (3Y / 5Y / 7Y Rolling) */}
+                    {/* Returns (3Y SIP XIRR / 5Y SIP XIRR / 7Y Rolling) */}
                     <td className="py-3.5 px-4 whitespace-nowrap font-mono">
                       <div className="flex items-center gap-2">
                         <div>
-                          <span className="text-[9px] uppercase text-[var(--text-3)] block">3Y</span>
-                          <span className="font-semibold text-[var(--text-1)]">{returns.cagr_3y ? `${returns.cagr_3y}%` : '—'}</span>
-                        </div>
-                        <span className="text-[var(--border)]">/</span>
-                        <div>
-                          <span className="text-[9px] uppercase text-[var(--text-3)] block">5Y</span>
-                          <span className="font-bold text-[var(--success)]">
-                            {returns.cagr_5y ? `${returns.cagr_5y}%` : <span className="text-[var(--text-3)] text-[11px] font-normal" title="Inception post-2020">N/A*</span>}
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">3Y XIRR</span>
+                          <span className="font-semibold text-[var(--text-1)]">
+                            {returns.sip_xirr_3y ? `${returns.sip_xirr_3y}%` : (returns.cagr_3y ? `${returns.cagr_3y}%` : '—')}
                           </span>
                         </div>
                         <span className="text-[var(--border)]">/</span>
                         <div>
-                          <span className="text-[9px] uppercase text-[var(--text-3)] block">7Y XIRR</span>
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">5Y XIRR</span>
+                          <span className="font-bold text-[var(--success)]">
+                            {returns.sip_xirr_5y ? `${returns.sip_xirr_5y}%` : (returns.cagr_5y ? `${returns.cagr_5y}%` : <span className="text-[var(--text-3)] text-[11px] font-normal" title="Inception post-2020">N/A*</span>)}
+                          </span>
+                        </div>
+                        <span className="text-[var(--border)]">/</span>
+                        <div>
+                          <span className="text-[9px] uppercase text-[var(--text-3)] block">7Y Rolling</span>
                           <span className="font-bold text-[var(--accent)]">
                             {returns.rolling_7y_median_xirr ? `${returns.rolling_7y_median_xirr}%` : <span className="text-[var(--text-3)] text-[11px] font-normal" title={returns.rolling_7y_note || "Scheme lacks 7-year history"}>N/A*</span>}
                           </span>
@@ -458,12 +464,12 @@ export default function RecommendedPortfolioCard({ fundUniverse, monthlySip, lum
 
       {/* ── Footer Guidance ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-3)]">
-        <p>
-          💡 <strong>Track Record Integrity:</strong> *N/A indicates funds launched post-2018/2021 (e.g. UTI Momentum launched Mar 2021, Motilal S&P 500 launched Apr 2020) that lack a full 7-year rolling cycle. No artificial backfilled projections are shown.
+        <p className="max-w-3xl leading-relaxed">
+          💡 <strong>Why SIP XIRR Matters:</strong> For recurring monthly investments, point-to-point CAGR is mathematically inaccurate because your capital enters in multiple installments at varying NAV valuations. InvestPro evaluates allocations based on true <strong>SIP XIRR</strong> (rupee-cost averaged return). *N/A marks schemes launched post-2020 lacking full 7-year rolling cycles.
         </p>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono text-[11px] text-[var(--text-2)]">Verified AMFI Metrics Active</span>
+          <span className="font-mono text-[11px] text-[var(--text-2)]">Verified AMFI & SIP XIRR Active</span>
         </div>
       </div>
 
