@@ -14,9 +14,10 @@ import DirectiveCommandCenter from './components/DirectiveCommandCenter';
 import CasUploadModal from './components/CasUploadModal';
 import AccountAggregatorModal from './components/AccountAggregatorModal';
 import MFCentralSyncModal from './components/MFCentralSyncModal';
+import CashflowEnvelopeCard from './components/CashflowEnvelopeCard';
 import { getSavedAASession } from './utils/accountAggregatorClient';
 import { getSavedMFCentralSession } from './utils/mfcentralParser';
-import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock } from 'lucide-react';
+import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock, Wallet } from 'lucide-react';
 import { getEnrichedFundUniverse } from './utils/financialCalculations';
 import { apiFetchTrajectory, apiFetchFundUniverse, calculateTrajectoryAnalysis } from './utils/apiClient';
 
@@ -345,6 +346,18 @@ export default function App() {
               <Award className="w-4 h-4" />
               <span>5. Tax Savings & Milestones</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('cashflow_stp')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'cashflow_stp'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              }`}
+            >
+              <Wallet className="w-4 h-4 text-emerald-400" />
+              <span>6. Envelopes & SurplusSweep™</span>
+            </button>
           </div>
 
           {/* Tab 1: Long-Term Barbell & Step-Up Trajectory */}
@@ -416,6 +429,19 @@ export default function App() {
             <TaxAndMilestonesCard 
               currentPortfolio={params.current_portfolio + params.lump_sum_amount}
               currentCtcLpa={params.current_ctc_lpa}
+            />
+          )}
+
+          {/* Tab 6: PocketPal Cashflow Envelopes, SurplusSweep & Windfall STP */}
+          {activeTab === 'cashflow_stp' && (
+            <CashflowEnvelopeCard 
+              userParams={params}
+              onUpdatePortfolio={(sweepAmount) => {
+                setParams(prev => ({
+                  ...prev,
+                  current_portfolio: prev.current_portfolio + sweepAmount
+                }));
+              }}
             />
           )}
 

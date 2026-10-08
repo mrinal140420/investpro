@@ -1222,6 +1222,39 @@ Using the baseline Nifty 50 SMA (24,850) to pause a momentum factor fund was a s
 All ghost metrics have been purged from the background database, and the Risk Monitors Card and Institutional Portfolio Allocator now reflect verified ground realities!`;
   }
 
+  // 000. POCKETPAL ENVELOPE BUDGETING, SURPLUSSWEEP & WINDFALL STP INQUIRIES
+  if (
+    q.includes('dinner') || q.includes('afford') || q.includes('spend') || q.includes('envelope') ||
+    q.includes('pocketpal') || q.includes('budget') || q.includes('kharch') || q.includes('kharcha') ||
+    q.includes('surplus') || q.includes('sweep') || q.includes('windfall') || q.includes('stp') || q.includes('bonus')
+  ) {
+    if (q.includes('windfall') || q.includes('bonus') || q.includes('lump') || q.includes('stp') || q.includes('lakh')) {
+      return `Bhai, bada bonus ya windfall mila hai toh seedha peak market me saara paisa ek saath dump mat karna! 🛑
+      
+## 1. ⚠️ The Lumpsum Trap (All-Time-High Risk)
+Agar Nifty 50 ya Small Cap apne peak par ho aur tune ₹5 Lakh ek jhatke me equity me daal diya, aur agle mahine 12% correction aa gaya — toh instant ₹60,000 ka unrealized loss ho jayega. Panic me aake 90% log bech dete hain.
+
+## 2. 🛡️ InvestPro WindfallSTP™ Protocol (Recommended)
+1. **Park in Liquid Debt Fund (~7% YTM):** Poora ₹5,00,000 pehle ek safe overnight / liquid fund me park kar. Wahan ye ~₹16,000+ extra risk-free interest kamaayega.
+2. **Automated Monthly Drip (STP):** Wahan se har mahine automatically **₹50,000/month** 10 months tak transfer ho:
+   • 50% Nifty 50 Core Index (₹25,000)
+   • 30% Small Cap High Alpha (₹15,000)
+   • 10% Motilal S&P 500 (₹5,000)
+   • 10% Silver ETF FoF (₹5,000)
+3. **Volatility Reduced by ~68%:** Chahe market gire ya chade, tu har dip par average buy karega aur dimaag shaant rahega! Check Tab 6 (Envelopes & SurplusSweep) to activate this plan!`;
+    }
+
+    return `Bhai, PocketPal Envelope Ledger me cashflow track karna bohot solid habit hai! 💼
+
+## 1. 🍽️ Spending Check ("Can I afford this?")
+Tere active **Dining & Outing Envelope** me monthly ₹8,000 ka allocation hai, jisme se abhi lagbhag **₹2,600 bache hain**.
+• Agar tu aaj ₹2,500 ka dinner karega, toh agle 8 din ke liye sirf ₹100 bachenge!
+• **FinBhai Advice:** ₹1,200 tak ka casual dinner karega toh balance healthy rahega aur month-end tak emergency nahi aayegi.
+
+## 2. 🚀 The SurplusSweep™ Advantage
+Budgeting ka asli maza tab hai jab bacha hua paisa inflation se na mare. Payday ki pichli raat (11:59 PM), tere saare unspent envelopes ka paisa automatically calculate hoke **SurplusSweep™** ke through tere Nifty 50 aur Small Cap Barbell me deploy ho jata hai. Check Tab 6 me live preview!`;
+  }
+
   // 0. AMC MINIMUM SIP CONSTRAINTS & REAL-WORLD STANDALONE SIZING
   // User inquiries about ₹100 minimum, ₹75/mo, splitting ₹300 into 4-5 funds, mandate constraints, rule-based limits:
   const isAmcConstraintQuery = 
