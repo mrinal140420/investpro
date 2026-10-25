@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Target, ShieldCheck, Zap, ExternalLink, PiggyBank, CreditCard, Sparkles, CheckCircle2, AlertCircle, ArrowUpRight, Clock, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Target, ShieldCheck, Zap, ExternalLink, PiggyBank, CreditCard, Sparkles, CheckCircle2, AlertCircle, ArrowUpRight, Clock, HelpCircle, Layers, Heart, Home, TrendingUp, Info } from 'lucide-react';
 import { format_indian_currency } from '../utils/formatters';
-import { calculateGoalPlan } from '../utils/financialCalculations';
+import { calculateGoalPlan, calculateBudgetWaterfall } from '../utils/financialCalculations';
 import { apiFetchGoalPlan } from '../utils/apiClient';
 
 const PRESET_GOALS = [
@@ -13,6 +13,11 @@ const PRESET_GOALS = [
 ];
 
 export default function GoalSlicingCard({ userParams }) {
+  // Mode: 'waterfall' (Capacity-First ₹10k Budget) or 'single_goal' (Reverse EMI)
+  const [plannerMode, setPlannerMode] = useState('waterfall');
+  const [waterfallBudget, setWaterfallBudget] = useState(10000); // ₹10,000/mo default
+  const [waterfallStepUp, setWaterfallStepUp] = useState(10); // 10%
+
   const [goalName, setGoalName] = useState('Wedding / Big Event Fund');
   const [targetAmount, setTargetAmount] = useState(1500000);
   const [targetMonths, setTargetMonths] = useState(36);
@@ -25,14 +30,26 @@ export default function GoalSlicingCard({ userParams }) {
   // Synchronize with userParams if provided
   useEffect(() => {
     if (userParams) {
+      if (userParams.monthly_investable_sip) {
+        setWaterfallBudget(userParams.monthly_investable_sip);
+      }
       if (userParams.current_portfolio && userParams.current_portfolio > 0) {
         setCurrentSaved(Math.round(userParams.current_portfolio * 0.2)); // 20% earmarked for immediate goals
       }
       if (userParams.annual_step_up_pct !== undefined) {
         setStepUpPct(userParams.annual_step_up_pct);
+        setWaterfallStepUp(Math.round(userParams.annual_step_up_pct * 100));
       }
     }
   }, [userParams]);
+
+  // Capacity-First Waterfall Calculation
+  const waterfallData = useMemo(() => {
+    return calculateBudgetWaterfall({
+      totalMonthlyBudget: waterfallBudget,
+      annualStepUpPct: waterfallStepUp,
+    });
+  }, [waterfallBudget, waterfallStepUp]);
 
   const calculateTargetDate = (months) => {
     const d = new Date();
@@ -104,6 +121,183 @@ export default function GoalSlicingCard({ userParams }) {
         </span>
       </div>
 
+      {/* Mode Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPlannerMode('waterfall')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              plannerMode === 'waterfall'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Capacity-First Multi-Goal Waterfall (The Real ₹10k Budget Solution)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPlannerMode('single_goal')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              plannerMode === 'single_goal'
+                ? 'bg-[var(--accent)] text-white shadow-md'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+            }`}
+          >
+            <Target className="w-4 h-4" />
+            <span>Single Goal Target-First (Reverse-EMI)</span>
+          </button>
+        </div>
+
+        <span className="text-[11px] font-mono text-emerald-400 font-semibold px-2">
+          {plannerMode === 'waterfall' ? '✓ Solves the ₹10k Dilemma' : 'Reverse Target Math'}
+        </span>
+      </div>
+
+      {/* ── PLANNER MODE 1: Capacity-First Multi-Goal Waterfall ── */}
+      {plannerMode === 'waterfall' ? (
+        <div className="space-y-6">
+          {/* Why traditional calculators fail banner */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-[var(--surface-2)] to-emerald-500/10 border border-amber-500/30 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Real-World Dilemma: "Bhai ₹10,000/mo hai, toh 32k ki SIP kahan se lau?"</span>
+            </div>
+            <p className="text-xs text-[var(--text-2)] leading-relaxed">
+              Traditional calculators assume you have unlimited surplus, so they demand an unrealistic <strong>₹32,000/month</strong> for a 4-year wedding. In reality, you start with your actual budget of <strong>₹{waterfallBudget.toLocaleString('en-IN')}/mo</strong>, slice it across your goals by time horizon, and use the <strong>Annual Step-Up</strong> as your salary increases to bridge the gap!
+            </p>
+          </div>
+
+          {/* Budget Controls Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+            <div className="sm:col-span-7 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-[var(--text-1)]">Total Monthly Investable Budget:</span>
+                <span className="font-mono font-bold text-emerald-400 text-sm">₹{waterfallBudget.toLocaleString('en-IN')}/mo</span>
+              </div>
+              <input
+                type="range"
+                min="3000"
+                max="50000"
+                step="1000"
+                value={waterfallBudget}
+                onChange={(e) => setWaterfallBudget(parseInt(e.target.value))}
+                className="w-full h-2 bg-[var(--surface)] rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+              <div className="flex justify-between text-[10px] text-[var(--text-3)] font-mono">
+                <span>Min: ₹3,000/mo</span>
+                <span>Max: ₹50,000/mo</span>
+              </div>
+            </div>
+
+            <div className="sm:col-span-5 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-[var(--text-1)]">Annual Salary Step-Up:</span>
+                <span className="font-mono font-bold text-amber-400">+{waterfallStepUp}% / year</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
+                {[0, 5, 10, 15].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setWaterfallStepUp(pct)}
+                    className={`py-1 text-xs font-bold rounded border transition-all ${
+                      waterfallStepUp === pct
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-[var(--surface)] text-[var(--text-3)] border-[var(--border)] hover:text-[var(--text-1)]'
+                    }`}
+                  >
+                    {pct === 0 ? '0%' : `+${pct}%`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* The 3-Goal Waterfall Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {waterfallData.goals.map((g) => (
+              <div
+                key={g.id}
+                className="p-5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition-all shadow-sm"
+              >
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {g.sharePct}% Allocation
+                    </span>
+                    <span className="text-xs font-mono text-[var(--text-3)]">
+                      {g.horizonYears} Years Horizon
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-[var(--text-1)] mt-3 flex items-center gap-2">
+                    {g.id === 'wedding' && <Heart className="w-4 h-4 text-pink-400" />}
+                    {g.id === 'house' && <Home className="w-4 h-4 text-amber-400" />}
+                    {g.id === 'wealth' && <TrendingUp className="w-4 h-4 text-emerald-400" />}
+                    <span>{g.name}</span>
+                  </h3>
+
+                  <div className="mt-2 space-y-1">
+                    <div className="text-2xl font-black font-mono text-[var(--accent-bright)]">
+                      ₹{g.monthlySip.toLocaleString('en-IN')}<span className="text-xs font-normal text-[var(--text-3)]">/mo</span>
+                    </div>
+                    <span className="text-[11px] text-[var(--text-3)] block">
+                      Target Goal: {format_indian_currency(g.targetAmount)}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-3)]">Projected Cash:</span>
+                      <span className="font-mono font-bold text-emerald-400">
+                        {format_indian_currency(g.accumulated)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-3)]">Total Invested:</span>
+                      <span className="font-mono text-[var(--text-2)]">
+                        {format_indian_currency(g.totalInvested)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-3)]">Expected CAGR:</span>
+                      <span className="font-mono font-bold text-[var(--text-1)]">
+                        {g.expectedCagr}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-[11px] text-[var(--text-2)] leading-relaxed">
+                    <span className="font-semibold text-[var(--text-1)] block mb-0.5">Asset Vehicle:</span>
+                    <span className="text-emerald-400 font-mono text-[10px] block">{g.recommendedVehicle}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-[var(--border)] text-[11px] text-[var(--text-3)] leading-relaxed">
+                  💡 <strong>Fiduciary Rule:</strong> {g.advisorGuidance}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Lifecycle Sweep Explanation */}
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] space-y-2 text-xs">
+            <h4 className="font-bold text-[var(--text-1)] flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-400" />
+              The Step-Up Sweep: How Goals Naturally Mature
+            </h4>
+            <p className="text-[var(--text-3)] leading-relaxed">
+              <strong>Year 1 to 4:</strong> You invest ₹5,000 in Wedding (accumulates ~₹3.04L cash) + ₹3,000 in House + ₹2,000 in Wealth.<br />
+              <strong>Year 5 (Wedding Complete):</strong> The ₹5,000/mo (which has stepped up to ~₹7,300/mo) is freed up! It sweeps directly into your <strong>House Down Payment</strong> and <strong>Factor Barbell</strong>, accelerating your ₹30 Lakh house target without any extra stress on your lifestyle!
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* ── PLANNER MODE 2: Single Goal Target-First (Existing) ── */
+        <div>
       {/* Preset Buttons */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
         <span className="text-[11px] font-medium text-[var(--text-3)] uppercase tracking-wider">Quick Presets:</span>
@@ -324,6 +518,8 @@ export default function GoalSlicingCard({ userParams }) {
             </div>
           )}
 
+        </div>
+      )}
         </div>
       )}
     </div>

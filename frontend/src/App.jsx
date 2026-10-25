@@ -15,9 +15,10 @@ import CasUploadModal from './components/CasUploadModal';
 import AccountAggregatorModal from './components/AccountAggregatorModal';
 import MFCentralSyncModal from './components/MFCentralSyncModal';
 import CashflowEnvelopeCard from './components/CashflowEnvelopeCard';
+import SwpPlannerCard from './components/SwpPlannerCard';
 import { getSavedAASession } from './utils/accountAggregatorClient';
 import { getSavedMFCentralSession } from './utils/mfcentralParser';
-import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock, Wallet } from 'lucide-react';
+import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock, Wallet, TrendingDown } from 'lucide-react';
 import { getEnrichedFundUniverse } from './utils/financialCalculations';
 import { apiFetchTrajectory, apiFetchFundUniverse, calculateTrajectoryAnalysis } from './utils/apiClient';
 
@@ -358,6 +359,18 @@ export default function App() {
               <Wallet className="w-4 h-4 text-emerald-400" />
               <span>6. Envelopes & SurplusSweep™</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('swp_planner')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'swp_planner'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              }`}
+            >
+              <TrendingDown className="w-4 h-4 text-emerald-400" />
+              <span>7. SWP & Cashflow Machine</span>
+            </button>
           </div>
 
           {/* Tab 1: Long-Term Barbell & Step-Up Trajectory */}
@@ -443,6 +456,11 @@ export default function App() {
                 }));
               }}
             />
+          )}
+
+          {/* Tab 7: SWP & Cashflow Machine */}
+          {activeTab === 'swp_planner' && (
+            <SwpPlannerCard userParams={params} />
           )}
 
           {/* Official MFCentral RTA Live Sync Modal */}

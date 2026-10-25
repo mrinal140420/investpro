@@ -8,6 +8,7 @@ import { format_indian_currency } from '../utils/formatters.js';
 import { generateFinBhaiResponse } from '../utils/financialCalculations.js';
 
 const QUICK_PROMPTS = [
+  "Mere paas ₹10,000/mo SIP hai, Wedding (4y), House aur Wealth kaise divide karun?",
   "Yeh SWP kya hai aur compounding par kya effect padta hai?",
   "Kya yeh target sambhav hai jo maine set kiya hai?",
   "Bhai, mera plan kesa hai review karo?",

@@ -59,6 +59,11 @@ export default function BehavioralShield({ userParams }) {
   const [monthlySip, setMonthlySip] = useState(25000);
   const [annualStepUpPct, setAnnualStepUpPct] = useState(10); // 5%, 10%, 15%
 
+  // Realism & Salary Ceiling Guardrails
+  const [monthlySalary, setMonthlySalary] = useState(60000);
+  const [isStepUpCapped, setIsStepUpCapped] = useState(false);
+  const [stepUpCapAmount, setStepUpCapAmount] = useState(60000);
+
   // Sync with userParams if provided
   useEffect(() => {
     if (userParams) {
@@ -70,6 +75,13 @@ export default function BehavioralShield({ userParams }) {
       }
       if (userParams.annual_step_up_pct !== undefined) {
         setAnnualStepUpPct(Math.round(userParams.annual_step_up_pct * 100));
+      }
+      if (userParams.current_ctc_lpa) {
+        const inHand = Math.round((userParams.current_ctc_lpa * 100000 / 12) * 0.82);
+        if (inHand > 5000) {
+          setMonthlySalary(inHand);
+          setStepUpCapAmount(Math.round(inHand * 0.65));
+        }
       }
       if (userParams.near_target_date) {
         const targetYear = new Date(userParams.near_target_date).getFullYear();
@@ -92,14 +104,29 @@ export default function BehavioralShield({ userParams }) {
     let accumulated = 0;
     let currentSip = monthlySip;
     let totalSelfInvested = 0;
+    const yearlySipSchedule = [];
 
     for (let yr = 1; yr <= horizonYears; yr++) {
+      yearlySipSchedule.push({
+        year: yr,
+        monthlySip: Math.round(currentSip)
+      });
+
       for (let m = 1; m <= 12; m++) {
         accumulated = (accumulated + currentSip) * (1 + monthlyRate);
         totalSelfInvested += currentSip;
       }
-      currentSip = currentSip * (1 + annualStepUpPct / 100);
+
+      let nextSip = currentSip * (1 + annualStepUpPct / 100);
+      if (isStepUpCapped && nextSip > stepUpCapAmount) {
+        nextSip = stepUpCapAmount;
+      }
+      currentSip = nextSip;
     }
+
+    const peakMonthlySip = yearlySipSchedule[yearlySipSchedule.length - 1]?.monthlySip || monthlySip;
+    const salaryRatioPct = Math.round((peakMonthlySip / Math.max(1, monthlySalary)) * 100);
+    const isExceedingSalary = peakMonthlySip > monthlySalary * 0.55;
 
     const fundingGap = targetInr - accumulated;
     const isFunded = fundingGap <= 0;
@@ -112,7 +139,11 @@ export default function BehavioralShield({ userParams }) {
       for (let m = 1; m <= 480; m++) {
         acc = (acc + sip) * (1 + mRate);
         if (acc >= targetInr) return Math.round((m / 12) * 10) / 10;
-        if (m % 12 === 0) sip *= (1 + stepUp / 100);
+        if (m % 12 === 0) {
+          let next = sip * (1 + stepUp / 100);
+          if (isStepUpCapped && next > stepUpCapAmount) next = stepUpCapAmount;
+          sip = next;
+        }
       }
       return 40.0;
     };
@@ -132,8 +163,12 @@ export default function BehavioralShield({ userParams }) {
       timelineBaselineFlat,
       timelineFactorStepUp,
       yearsSaved,
+      yearlySipSchedule,
+      peakMonthlySip,
+      salaryRatioPct,
+      isExceedingSalary
     };
-  }, [targetCorpusLakhs, horizonYears, monthlySip, annualStepUpPct, effectiveCagr]);
+  }, [targetCorpusLakhs, horizonYears, monthlySip, annualStepUpPct, effectiveCagr, isStepUpCapped, stepUpCapAmount, monthlySalary]);
 
   return (
     <div className="ip-card accent-stripe space-y-6">
@@ -333,6 +368,60 @@ export default function BehavioralShield({ userParams }) {
               ))}
             </div>
           </div>
+
+          {/* Controllable 4: Salary Realism & Step-Up Ceiling Guardrail */}
+          <div className="space-y-3 p-3.5 rounded-lg bg-secondary/30 border border-border">
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium flex items-center gap-1.5 text-foreground">
+                <DollarSign className="w-4 h-4 text-emerald-400" /> Monthly Take-Home Salary:
+              </span>
+              <span className="font-mono font-bold text-emerald-400">₹{monthlySalary.toLocaleString('en-IN')}/mo</span>
+            </div>
+            <input
+              type="range"
+              min="20000"
+              max="300000"
+              step="5000"
+              value={monthlySalary}
+              onChange={(e) => setMonthlySalary(parseInt(e.target.value))}
+              className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+
+            <div className="pt-2 border-t border-border/50 space-y-2">
+              <label className="flex items-center justify-between text-xs cursor-pointer">
+                <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" /> Cap Step-Up at Career Salary Ceiling
+                </span>
+                <input
+                  type="checkbox"
+                  checked={isStepUpCapped}
+                  onChange={(e) => setIsStepUpCapped(e.target.checked)}
+                  className="rounded border-border text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                />
+              </label>
+
+              {isStepUpCapped && (
+                <div className="space-y-1.5 pt-1 animate-in fade-in">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Max Monthly SIP Cap:</span>
+                    <span className="font-mono font-bold text-amber-400">₹{stepUpCapAmount.toLocaleString('en-IN')}/mo</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={monthlySip}
+                    max={Math.max(monthlySip + 10000, monthlySalary * 0.8)}
+                    step="5000"
+                    value={stepUpCapAmount}
+                    onChange={(e) => setStepUpCapAmount(parseInt(e.target.value))}
+                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Step-up will increase until reaching ₹{stepUpCapAmount.toLocaleString('en-IN')}/mo, then remain flat to maintain disposable income.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Comparative Timeline Matrix & Reality Verdict */}
@@ -416,6 +505,122 @@ export default function BehavioralShield({ userParams }) {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* ── Monthly SIP Escalation & Salary Realism Schedule (The Realism Guardrail) ── */}
+      <div className="p-4 sm:p-5 rounded-xl bg-secondary/30 border border-border space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-3">
+          <div>
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              Monthly SIP Escalation & Salary Realism Schedule
+            </h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Tracks actual monthly cash outflow across time to prevent step-up from outpacing career salary.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">Peak Monthly Outflow:</span>
+            <span className="px-2.5 py-1 rounded-md bg-background font-mono font-extrabold text-xs text-foreground border border-border">
+              ₹{projection.peakMonthlySip.toLocaleString('en-IN')}/mo
+            </span>
+          </div>
+        </div>
+
+        {/* Milestone Progression Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="p-3 rounded-lg bg-background/80 border border-border">
+            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Year 1 (Starting)</span>
+            <span className="text-sm font-mono font-extrabold text-foreground mt-1 block">
+              ₹{(projection.yearlySipSchedule[0]?.monthlySip || monthlySip).toLocaleString('en-IN')}/mo
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              {Math.round(((projection.yearlySipSchedule[0]?.monthlySip || monthlySip) / Math.max(1, monthlySalary)) * 100)}% of salary
+            </span>
+          </div>
+
+          {horizonYears >= 3 && (
+            <div className="p-3 rounded-lg bg-background/80 border border-border">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Year 3 (+{annualStepUpPct * 2}%)</span>
+              <span className="text-sm font-mono font-extrabold text-foreground mt-1 block">
+                ₹{(projection.yearlySipSchedule[2]?.monthlySip || monthlySip).toLocaleString('en-IN')}/mo
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {Math.round(((projection.yearlySipSchedule[2]?.monthlySip || monthlySip) / Math.max(1, monthlySalary)) * 100)}% of salary
+              </span>
+            </div>
+          )}
+
+          {horizonYears >= 5 && (
+            <div className="p-3 rounded-lg bg-background/80 border border-border">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Year 5 (+{Math.round(((projection.yearlySipSchedule[4]?.monthlySip || monthlySip) / monthlySip - 1) * 100)}%)</span>
+              <span className="text-sm font-mono font-extrabold text-amber-400 mt-1 block">
+                ₹{(projection.yearlySipSchedule[4]?.monthlySip || monthlySip).toLocaleString('en-IN')}/mo
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {Math.round(((projection.yearlySipSchedule[4]?.monthlySip || monthlySip) / Math.max(1, monthlySalary)) * 100)}% of salary
+              </span>
+            </div>
+          )}
+
+          {horizonYears >= 10 && (
+            <div className="p-3 rounded-lg bg-background/80 border border-border">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Year 10 Milestone</span>
+              <span className="text-sm font-mono font-extrabold text-amber-400 mt-1 block">
+                ₹{(projection.yearlySipSchedule[9]?.monthlySip || monthlySip).toLocaleString('en-IN')}/mo
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {Math.round(((projection.yearlySipSchedule[9]?.monthlySip || monthlySip) / Math.max(1, monthlySalary)) * 100)}% of salary
+              </span>
+            </div>
+          )}
+
+          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+            <span className="text-[10px] uppercase font-semibold text-emerald-400 block">Year {horizonYears} (Final Horizon)</span>
+            <span className="text-sm font-mono font-extrabold text-emerald-300 mt-1 block">
+              ₹{projection.peakMonthlySip.toLocaleString('en-IN')}/mo
+            </span>
+            <span className="text-[10px] text-emerald-300/80 mt-0.5 block">
+              {projection.salaryRatioPct}% of Current Salary
+            </span>
+          </div>
+        </div>
+
+        {/* Realism Guardrail Diagnostic Verdict */}
+        {projection.isExceedingSalary ? (
+          <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-bold text-amber-300 block">
+                ⚠️ Career Realism Alert: Monthly SIP Escalates to {projection.salaryRatioPct}% of Current Salary!
+              </span>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                By Year {horizonYears}, your monthly SIP will expand to <strong>₹{projection.peakMonthlySip.toLocaleString('en-IN')}/month</strong>. If your career salary does not increase through promotions or increments at the same pace, this SIP will squeeze your living expenses. 
+                <strong> Fiduciary Recommendation:</strong> Check <em>"Cap Step-Up at Career Salary Ceiling"</em> on the left to lock a safe upper limit (e.g. ₹{Math.round(monthlySalary * 0.5).toLocaleString('en-IN')}/mo).
+              </p>
+            </div>
+          </div>
+        ) : isStepUpCapped ? (
+          <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-emerald-300 block">
+                🛡️ Salary Ceiling Active: SIP Safely Capped at ₹{stepUpCapAmount.toLocaleString('en-IN')}/mo
+              </span>
+              <p className="text-muted-foreground text-[11px] leading-relaxed mt-0.5">
+                Your monthly commitment will never exceed ₹{stepUpCapAmount.toLocaleString('en-IN')}/month, keeping your savings rate realistic while still compounding a projected corpus of <strong>₹{(projection.accumulated / 100000).toFixed(2)} Lakhs</strong>.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs flex items-center gap-3">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-muted-foreground text-[11px]">
+              <strong>Realistic Trajectory:</strong> Peak monthly SIP stays at {projection.salaryRatioPct}% of your current monthly income, leaving ample breathing room for lifestyle and emergency reserves.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

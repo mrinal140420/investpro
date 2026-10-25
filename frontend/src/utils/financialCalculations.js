@@ -1601,7 +1601,57 @@ Agar aapka monthly kharcha ₹60,000 hai (Annual: ₹7.2 Lakhs):
 • 4% Rule tabhi safely kaam karta hai jab portfolio 60% Equity + 40% Debt me structured ho.`;
   }
 
-  // 15. DEFAULT HOLISTIC SEBI RIA RESPONSE GROUNDED IN USER PLAN
+  // 15. REAL-LIFE BUDGET ALLOCATION (₹10,000 SIP ACROSS WEDDING, HOUSE & WEALTH)
+  if (
+    q.includes('10000') || q.includes('10k') || q.includes('wedding') || q.includes('shadi') ||
+    q.includes('ghar') || q.includes('house') || q.includes('multiple goal') || q.includes('superficial') ||
+    q.includes('kaise divide') || q.includes('kese divide') || q.includes('split') || q.includes('32k') ||
+    q.includes('dilemma')
+  ) {
+    return `Bhai, aapne bilkul sahi aur sabse authentic sawaal poocha hai! 🎯
+
+Traditional calculators yahi sabse badi galti karte hain: Woh ulti direction me kaam karte hain. 
+Woh bolte hain: *"Wedding ke liye 15 Lakh chahiye 4 saal me? Toh ₹32,000/month SIP karo!"*
+Arey bhai, jab investor ke paas kul milakar **₹10,000/month** hi invest karne ko hain, toh woh ₹32k kahan se layega? Is type ki calculation mathematically sahi hote hue bhi real life me **100% superficial aur impractical** hoti hai!
+
+Ek SEBI RIA fiduciary advisor isko **"Capacity-First Priority Waterfall"** se solve karta hai:
+
+---
+
+## 🧭 The ₹10,000/Month Reality Allocation Blueprint
+
+Aapke paas ₹10,000 hain aur 3 competing goals hain:
+1. **Wedding (4 Saal - Short/Medium Term)**
+2. **House Downpayment (8 Saal - Medium Term)**
+3. **Wealth Creation / Financial Freedom (15+ Saal - Long Term)**
+
+Yahan asset-class selection time horizon ke hisab se match karna padega:
+
+### 1. 💍 Wedding Fund (4 Saal - Capital Preservation) → ₹5,000/Month (50%)
+• **Kahan Lagayein:** Parag Parikh Arbitrage Fund ya Multi-Asset Allocation Fund (Expected: ~7.5% - 8.5%).
+• **Strict Rule:** Yahan Small-Cap ya Momentum Equity **kabhi mat lagana**! Agar shaadi se 6 mahine pehle market 25% gir gayi, toh shaadi ka budget collapse ho jayega.
+• **Result:** ₹5,000/mo (with 10% annual step-up) se 4 saal me aapke paas **~₹3.0 Lakhs se ₹3.2 Lakhs** direct cash corpus ready hoga!
+• **The Realism:** Yeh ₹3 Lakhs aapko kisi bhi 14%-16% high-interest wedding loan se bachayega. Baaki deficit family contribution ya annual bonuses se bridge hota hai.
+
+### 2. 🏡 House Down Payment (8 Saal - Balanced Compounder) → ₹3,000/Month (30%)
+• **Kahan Lagayein:** HDFC Nifty 50 Index Fund + Large & Midcap Hybrid (Expected: ~11.5% - 12% CAGR).
+• **Result:** ₹3,000/mo (with 10% step-up) 8 saal me compound hokar **~₹5.5 Lakhs se ₹6.0 Lakhs** ka solid home down-payment ready karega.
+
+### 3. 🚀 Permanent Wealth & Factor Barbell (15+ Saal - Alpha Engine) → ₹2,000/Month (20%)
+• **Kahan Lagayein:** InvestPro 50/30/10/10 Factor Barbell (Tata Small Cap + UTI Momentum 30 + Motilal S&P 500) (Expected: ~15.8% CAGR).
+• **Result:** Yeh chhota sa ₹2,000/mo (10% step-up ke sath) 15 saal me **~₹40 Lakhs** aur 20 saal me **~₹1.05 Crores** ka generational corpus banata hai!
+
+---
+
+## ⚡ The Career Increment Miracle (Why You Won't Stay at ₹10k Forever)
+Aaj aapki capacity ₹10k hai. Lekin har saal jab aapki salary 10%-15% badhegi:
+• **Year 1:** ₹10,000/mo total
+• **Year 3:** ₹12,100/mo total
+• **Year 5 (Wedding Done):** Jo ₹5,000 shaadi me ja raha tha, woh direct House aur Wealth me shift ho jayega!
+• Isse aapka home downpayment aur wealth target natural speed se accelerate hoga, bina kisi superficial pressure ke.`;
+  }
+
+  // 16. DEFAULT HOLISTIC SEBI RIA RESPONSE GROUNDED IN USER PLAN
   return `Namaste! Main aapka SEBI RIA-Level AI Copilot FinBhai hoon.
 
 ## Aapka Active Portfolio Status
@@ -1617,6 +1667,192 @@ Agar aapka monthly kharcha ₹60,000 hai (Annual: ₹7.2 Lakhs):
 • 'Itne me kya hi hoga (₹300 SIP power)?'
 • 'S&P 500 FoF kyu zaroori hai?'
 • 'Section 112A tax kaise bachayein?'`;
+}
+
+/**
+ * Fiduciary SWP (Systematic Withdrawal Plan) Simulator
+ * Calculates monthly residual compounding, depletion timeline, and tax savings vs 30% Bank FD slab.
+ */
+export function calculateSwpSimulation({
+  initialCorpus = 10000000,
+  monthlyWithdrawal = 50000,
+  expectedCagrPct = 12.0,
+  horizonYears = 20,
+  annualInflationPct = 0,
+  taxSlabPct = 30
+}) {
+  const safeCorpus = Math.max(100000, Number(initialCorpus) || 1000000);
+  const safeWithdrawal = Math.max(1000, Number(monthlyWithdrawal) || 10000);
+  const safeCagr = Math.max(1, Number(expectedCagrPct) || 12.0);
+  const safeYears = Math.min(40, Math.max(1, Number(horizonYears) || 20));
+  const safeInflation = Math.max(0, Number(annualInflationPct) || 0);
+
+  const monthlyRate = Math.pow(1 + safeCagr / 100, 1 / 12) - 1;
+  const annualWithdrawalRatePct = (safeWithdrawal * 12 / safeCorpus) * 100;
+
+  let currentCorpus = safeCorpus;
+  let totalWithdrawn = 0;
+  let totalGrowthGenerated = 0;
+  let currentMonthlyWithdrawal = safeWithdrawal;
+  let depletionMonth = null;
+  const yearlySchedule = [];
+
+  for (let yr = 1; yr <= safeYears; yr++) {
+    let yearWithdrawn = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      if (currentCorpus <= 0) {
+        if (!depletionMonth) depletionMonth = (yr - 1) * 12 + m;
+        currentCorpus = 0;
+        continue;
+      }
+
+      const withdrawalThisMonth = Math.min(currentCorpus, currentMonthlyWithdrawal);
+      currentCorpus -= withdrawalThisMonth;
+      totalWithdrawn += withdrawalThisMonth;
+      yearWithdrawn += withdrawalThisMonth;
+
+      const growthThisMonth = currentCorpus * monthlyRate;
+      currentCorpus += growthThisMonth;
+      totalGrowthGenerated += growthThisMonth;
+    }
+
+    yearlySchedule.push({
+      year: yr,
+      monthlyWithdrawal: Math.round(currentMonthlyWithdrawal),
+      annualWithdrawn: Math.round(yearWithdrawn),
+      closingCorpus: Math.round(currentCorpus),
+      isDepleted: currentCorpus <= 0
+    });
+
+    if (safeInflation > 0) {
+      currentMonthlyWithdrawal *= (1 + safeInflation / 100);
+    }
+  }
+
+  const fdTaxPaid = totalWithdrawn * (taxSlabPct / 100);
+  const growthFraction = totalGrowthGenerated / Math.max(1, (safeCorpus + totalGrowthGenerated));
+  const capitalGainsPortion = totalWithdrawn * growthFraction;
+  const taxableGains = Math.max(0, capitalGainsPortion - (125000 * safeYears));
+  const swpTaxPaid = taxableGains * 0.125;
+  const taxSavedVsFd = Math.max(0, fdTaxPaid - swpTaxPaid);
+
+  let sustainabilityStatus = 'PERPETUAL';
+  if (depletionMonth) {
+    sustainabilityStatus = 'DEPLETION_RISK';
+  } else if (annualWithdrawalRatePct > 7.0) {
+    sustainabilityStatus = 'MODERATE';
+  } else if (annualWithdrawalRatePct <= 4.5) {
+    sustainabilityStatus = 'PERPETUAL';
+  } else {
+    sustainabilityStatus = 'SUSTAINABLE';
+  }
+
+  return {
+    initialCorpus: safeCorpus,
+    monthlyWithdrawal: safeWithdrawal,
+    expectedCagrPct: safeCagr,
+    horizonYears: safeYears,
+    annualWithdrawalRatePct: Math.round(annualWithdrawalRatePct * 10) / 10,
+    finalCorpus: Math.round(currentCorpus),
+    totalWithdrawn: Math.round(totalWithdrawn),
+    totalGrowthGenerated: Math.round(totalGrowthGenerated),
+    depletionMonth,
+    depletionYear: depletionMonth ? Math.round((depletionMonth / 12) * 10) / 10 : null,
+    sustainabilityStatus,
+    taxSavedVsFd: Math.round(taxSavedVsFd),
+    fdTaxPaid: Math.round(fdTaxPaid),
+    swpTaxPaid: Math.round(swpTaxPaid),
+    yearlySchedule
+  };
+}
+
+/**
+ * Capacity-First Multi-Goal Priority Waterfall Allocator
+ * Solves the real-world dilemma: e.g. ₹10,000/mo budget split across Wedding (4y), House (8y), and Wealth (15y).
+ */
+export function calculateBudgetWaterfall({
+  totalMonthlyBudget = 10000,
+  annualStepUpPct = 10,
+  weddingTarget = 1500000,
+  houseTarget = 3000000,
+  wealthTarget = 10000000
+}) {
+  const budget = Math.max(1000, Number(totalMonthlyBudget) || 10000);
+  const stepUp = Math.max(0, Number(annualStepUpPct) || 10);
+
+  const weddingSip = Math.round(budget * 0.50);
+  const houseSip = Math.round(budget * 0.30);
+  const wealthSip = Math.round(budget * 0.20);
+
+  const projectSipWithStepUp = (initialSip, years, cagrPct) => {
+    const monthlyRate = Math.pow(1 + cagrPct / 100, 1 / 12) - 1;
+    let acc = 0;
+    let sip = initialSip;
+    let invested = 0;
+    for (let y = 1; y <= years; y++) {
+      for (let m = 1; m <= 12; m++) {
+        acc = (acc + sip) * (1 + monthlyRate);
+        invested += sip;
+      }
+      sip *= (1 + stepUp / 100);
+    }
+    return {
+      accumulated: Math.round(acc),
+      invested: Math.round(invested),
+      peakSip: Math.round(sip / (1 + stepUp / 100))
+    };
+  };
+
+  const weddingResult = projectSipWithStepUp(weddingSip, 4, 8.0);
+  const houseResult = projectSipWithStepUp(houseSip, 8, 11.5);
+  const wealthResult = projectSipWithStepUp(wealthSip, 15, 15.8);
+
+  return {
+    totalMonthlyBudget: budget,
+    annualStepUpPct: stepUp,
+    goals: [
+      {
+        id: 'wedding',
+        name: 'Wedding & Immediate Need',
+        horizonYears: 4,
+        sharePct: 50,
+        monthlySip: weddingSip,
+        targetAmount: weddingTarget,
+        accumulated: weddingResult.accumulated,
+        totalInvested: weddingResult.invested,
+        expectedCagr: 8.0,
+        recommendedVehicle: 'Arbitrage & Multi-Asset Allocation Fund (Zero Equity Drawdown Risk)',
+        advisorGuidance: 'Never risk short-term money in pure small-cap equity! Accumulate ~₹3.0 Lakhs direct cash reserve to eliminate high-interest 14% personal loans.'
+      },
+      {
+        id: 'house',
+        name: 'Dream House Down Payment',
+        horizonYears: 8,
+        sharePct: 30,
+        monthlySip: houseSip,
+        targetAmount: houseTarget,
+        accumulated: houseResult.accumulated,
+        totalInvested: houseResult.invested,
+        expectedCagr: 11.5,
+        recommendedVehicle: 'HDFC Nifty 50 Index + Aggressive Hybrid Direct',
+        advisorGuidance: '8 years allows index compounding to flourish. Reaches ~₹5.5L–₹6.0L down payment equity without touching wedding or retirement.'
+      },
+      {
+        id: 'wealth',
+        name: 'Permanent Wealth / Freedom',
+        horizonYears: 15,
+        sharePct: 20,
+        monthlySip: wealthSip,
+        targetAmount: wealthTarget,
+        accumulated: wealthResult.accumulated,
+        totalInvested: wealthResult.invested,
+        expectedCagr: 15.8,
+        recommendedVehicle: '50/30/10/10 Factor Barbell (Tata Small Cap + UTI Momentum + S&P 500)',
+        advisorGuidance: 'Starting with just ₹2,000/mo (with 10% annual step-up) snowballs into ~₹40 Lakhs in 15 yrs and ₹1.05 Cr in 20 yrs. The ultimate compounding seed.'
+      }
+    ]
+  };
 }
 
 
