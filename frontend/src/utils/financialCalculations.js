@@ -1222,11 +1222,70 @@ Using the baseline Nifty 50 SMA (24,850) to pause a momentum factor fund was a s
 All ghost metrics have been purged from the background database, and the Risk Monitors Card and Institutional Portfolio Allocator now reflect verified ground realities!`;
   }
 
+  // 0000. SYSTEMATIC WITHDRAWAL PLAN (SWP) & REVERSE COMPOUNDING DYNAMICS
+  if (
+    q.includes('swp') || q.includes('systematic withdrawal') ||
+    (q.includes('withdrawal') && (q.includes('compounding') || q.includes('plan') || q.includes('pension') || q.includes('income')))
+  ) {
+    return `Bhai, SWP (Systematic Withdrawal Plan) mutual fund ka sabse powerful yet sabse misunderstood retirement & cash-flow tool hai! 💡
+
+Aapne poocha: **"SWP kya hai, aur kya yeh compounding ko affect karta hai? If yes, how?"**
+Aaiye iski mathematics aur fiduciary ground reality ko crystal-clear samajhte hain:
+
+---
+
+## 1. 📌 SWP (Systematic Withdrawal Plan) Kya Hai?
+SWP basically **"SIP ka Ulta (Reverse SIP)"** hota hai:
+• **SIP Me:** Aap har mahine bank se fixed amount mutual fund me daalte ho aur us din ke NAV par units khareedte ho.
+• **SWP Me:** Aapka paisa mutual fund me invested rehta hai, aur har mahine ek fixed tareekh ko fund house aapke bataye huye amount (e.g. ₹30,000/mo) ke barabar **units bechkar (redeem karke)** seedha aapke bank account me transfer kar deta hai.
+• **Tax Advantage over Bank FD:** FD me poore interest par aapke tax slab (30%) ke hisab se tax lagta hai. SWP me sirf jo units redeem hoti hain, unke **capital gains portion** par tax lagta hai (principal tax-free nikalta hai).
+
+---
+
+## 2. ⚡ Kya SWP Compounding ko Affect Karta Hai?
+**Haan, 100% karta hai! Aur bohot deeply karta hai.**
+Compounding ka basic formula hota hai:
+$$A = P(1 + r)^t$$
+Yahan $P$ (Principal) jitna bada hoga aur jitne lambe samay ($t$) tak untouched rahega, compounding utni hi exponential hogi. Jab aap SWP karte ho, toh aap har mahine us $P$ me se units nikaal rahe ho.
+
+Lekin compounding par **Asli Effect 3 Scenarios** par depend karta hai:
+
+### Scenario A: Withdrawal Rate < Portfolio Growth Rate (Healthy Compounding 🚀)
+• Maan lijiye aapka corpus hai: **₹1 Crore**.
+• Portfolio CAGR: **12% p.a.** (₹12 Lakhs/year growth).
+• Aapka SWP hai: **6% p.a.** (₹6 Lakhs/year ya ₹50,000/month).
+• **Result:** Har saal ₹12L badha, ₹6L nikla $\\to$ net ₹6L corpus me add hota gaya!
+• **Compounding Status:** Corpus badhta rahega (10 saal baad ₹1 Cr ban jayega ~₹1.8 Cr, regular monthly income milne ke bawajood!).
+
+### Scenario B: Withdrawal Rate > Portfolio Growth Rate (Capital Depletion / Negative Compounding 💀)
+• Corpus: **₹50 Lakhs**.
+• Portfolio CAGR: **8% p.a.** (₹4 Lakhs/year growth).
+• Aapka SWP: **12% p.a.** (₹50,000/month ya ₹6 Lakhs/year).
+• **Result:** Growth se zyada paisa nikal raha hai. Har saal units kam hoti jayengi.
+• **Compounding Status:** Isko kehte hain **"Negative Compounding Spiral"**. Corpus tezi se deplete hoke 10–12 saal me ₹0 ho jayega!
+
+---
+
+## 3. ⚠️ The Real Killer: "Sequence of Returns Risk" & Reverse Dollar-Cost Averaging
+Ye sabse critical point hai jo 99% investors nahi samajhte:
+• **SIP me Bear Market Aapka Dost hota hai:** Jab market girti hai, aapko saste me zyada units milti hain (Rupee-Cost Averaging).
+• **SWP me Bear Market Aapka Dushman hota hai:** Jab market 20% gir jaati hai aur aapka ₹50,000 ka fixed SWP trigger hota hai, toh AMC ko ₹50,000 nikaalne ke liye **saste daam par zyada units bechni padti hain!**
+• Jab market wapas recover karegi, toh aapke paas participate karne ke liye units hi nahi bachengi! Isko kehte hain **Sequence-of-Returns Risk**.
+
+---
+
+## 4. 🛡️ InvestPro Fiduciary SWP Rules (Safe Retirement Formula)
+Agar future me SWP chalana ho, toh in 3 rules ko pathar ki lakeer maan lo:
+1. **The 4%-5% Golden Rule:** Kabhi bhi apne initial corpus ke 4%-5% per year se zyada SWP mat lagao (e.g. ₹1 Crore corpus par max ₹35,000 – ₹40,000/month SWP).
+2. **Bucket Strategy (2-Year Cash Buffer):** Equity fund se direct SWP mat chalao! Equity se paisa pehle **Parag Parikh Liquid Fund** me park karo (2 saal ka expenses), aur SWP Liquid fund se chalao. Taaki market crash me equity units na bechni padein.
+3. **Wait for Corpus Maturity:** Pehle apne current SIP phase (${format_indian_currency(sip)}/mo) se wealth accumulate hone do, SWP tabhi start karo jab target corpus reach ho jaye!`;
+  }
+
   // 000. POCKETPAL ENVELOPE BUDGETING, SURPLUSSWEEP & WINDFALL STP INQUIRIES
   if (
     q.includes('dinner') || q.includes('afford') || q.includes('spend') || q.includes('envelope') ||
     q.includes('pocketpal') || q.includes('budget') || q.includes('kharch') || q.includes('kharcha') ||
-    q.includes('surplus') || q.includes('sweep') || q.includes('windfall') || q.includes('stp') || q.includes('bonus')
+    q.includes('surplus') || q.includes('sweep') || q.includes('windfall') || (q.includes('stp') && !q.includes('step')) || q.includes('bonus')
   ) {
     if (q.includes('windfall') || q.includes('bonus') || q.includes('lump') || q.includes('stp') || q.includes('lakh')) {
       return `Bhai, bada bonus ya windfall mila hai toh seedha peak market me saara paisa ek saath dump mat karna! 🛑
@@ -1247,7 +1306,7 @@ Agar Nifty 50 ya Small Cap apne peak par ho aur tune ₹5 Lakh ek jhatke me equi
     return `Bhai, PocketPal Envelope Ledger me cashflow track karna bohot solid habit hai! 💼
 
 ## 1. 🍽️ Spending Check ("Can I afford this?")
-Tere active **Dining & Outing Envelope** me monthly ₹8,000 ka allocation hai, jisme se abhi lagbhag **₹2,600 bache hain**.
+Tere active **Dining & Outing Envelope** me monthly ₹8,00,0 ka allocation hai, jisme se abhi lagbhag **₹2,600 bache hain**.
 • Agar tu aaj ₹2,500 ka dinner karega, toh agle 8 din ke liye sirf ₹100 bachenge!
 • **FinBhai Advice:** ₹1,200 tak ka casual dinner karega toh balance healthy rahega aur month-end tak emergency nahi aayegi.
 
@@ -1496,7 +1555,53 @@ Agar aap flat SIP rakhoge toh inflation aapke real returns kha jayegi. Har saal 
 4. **Stick to the 5-Fund Direct Barbell:** 100% Direct Mutual Funds me discipline banaye rakhein.`;
   }
 
-  // 12. DEFAULT HOLISTIC SEBI RIA RESPONSE GROUNDED IN USER PLAN
+  // 12. DIRECT VS REGULAR PLANS (COMMISSION LEAKAGE)
+  if (q.includes('direct vs regular') || q.includes('regular plan') || q.includes('regular fund') || q.includes('commission') || q.includes('broker') || q.includes('distributor')) {
+    return `Direct vs Regular Mutual Funds: The 1.5% Wealth Destruction Trap! 🛑
+
+## 1. Asli Difference Kya Hai?
+• **Regular Plan:** Bank ya broker (distributor) ke through khareeda jata hai. AMC aapke corpus me se har saal ~1.0% to 1.8% commission katkar us broker ko life-long deti rehti hai — chahe aapka portfolio profit me ho ya loss me!
+• **Direct Plan:** Aap seedha AMC se khareedte hain (zero broker commission). Iska Expense Ratio (TER) 1.0% se 1.5% sasta hota hai.
+
+## 2. 20 Saal me ₹30 Lakhs ka Nuqsaan!
+Agar aap ₹25,000/mo SIP 20 saal tak chalate hain:
+• **Direct Plan (14.5% CAGR):** Final Corpus banega **~₹3.04 Crores**
+• **Regular Plan (13.0% CAGR - 1.5% commission):** Final Corpus banega **~₹2.41 Crores**
+• **Difference:** ₹63 Lakhs seedha aapki jeb se nikal kar broker ke commission account me chala gaya!
+
+InvestPro engine strictly 100% Direct Growth plans enforce karta hai taaki ek bhi rupaye ka commission leakage na ho.`;
+  }
+
+  // 13. XIRR VS CAGR
+  if (q.includes('xirr') || (q.includes('cagr') && !q.includes('s&p'))) {
+    return `XIRR vs CAGR: Mutual Fund Returns ka Asli Sach! 📊
+
+## 1. CAGR (Compounded Annual Growth Rate)
+• CAGR sirf tab kaam karta hai jab aapne **ek baar lumpsum paisa lagaya** aur beech me na kuch daala na nikaala (Point-to-Point return).
+• Formula: $CAGR = (End / Start)^{1/n} - 1$
+
+## 2. XIRR (Extended Internal Rate of Return)
+• SIP me aap har mahine alag-alag date par alag-alag NAV par paisa daalte hain. Isliye SIP par CAGR mathematically fail ho jata hai.
+• **XIRR har individual installment ke cash-flow timing ko track karta hai.** Jo installment 5 saal pehle gayi, uska time period 5 yrs hai; jo pichle mahine gayi, uska time period sirf 1 month hai.
+
+Har SIP aur mutual fund portfolio ka true mathematical performance sirf **XIRR** se hi measure kiya ja sakta hai.`;
+  }
+
+  // 14. RETIREMENT & 4% RULE (FIRE)
+  if (q.includes('retire') || q.includes('retirement') || q.includes('fire') || q.includes('4% rule') || q.includes('pension')) {
+    return `Financial Freedom & The 4% Safe Withdrawal Rule (FIRE): 🏖️
+
+## 1. Retirement Corpus Rule of Thumb
+Aapka Retirement Target = **Aapka Annual Expense × 25 to 30**
+Agar aapka monthly kharcha ₹60,000 hai (Annual: ₹7.2 Lakhs):
+• Minimum Safe Corpus Needed: **₹1.80 Crores to ₹2.16 Crores**
+
+## 2. The Famous 4% Safe Withdrawal Rule
+• Trinity Study ke anusar, agar aap retirement corpus me se har saal maximum **4.0%** nikaalte hain (aur har saal inflation ke sath withdraw amount badhate hain), toh aapka paisa **30+ saal tak kabhi khatam nahi hoga**!
+• 4% Rule tabhi safely kaam karta hai jab portfolio 60% Equity + 40% Debt me structured ho.`;
+  }
+
+  // 15. DEFAULT HOLISTIC SEBI RIA RESPONSE GROUNDED IN USER PLAN
   return `Namaste! Main aapka SEBI RIA-Level AI Copilot FinBhai hoon.
 
 ## Aapka Active Portfolio Status
