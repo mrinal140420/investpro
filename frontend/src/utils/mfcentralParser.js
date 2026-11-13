@@ -182,7 +182,92 @@ export function parseMFCentralText(rawText) {
     });
   }
 
-  // Fallback 1: If standard Closing Unit Balance format not found, parse line by line
+  // Strategy 2: Parse Demat Holdings and Multi-Page Table Format (e.g. MFCentral CAS Summary reports)
+  // Handles layout where Demat holdings show:
+  // Scheme Name (on 1-2 lines)
+  // Invested MarketValue Gain/Loss
+  // Units ClientId NAV
+  if (folios.length === 0) {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Match demat client ID or Folio lines e.g. "3.7180 12095500-52597280  0.0000" or "0.000  27-Sep-2026 1051226763  460.1296"
+      const dematMatch = line.match(/^([\d,]+\.?\d*)\s+([0-9\/\-]+)\s+([\d,]+\.?\d*)/);
+      if (dematMatch) {
+        const units = parseNum(dematMatch[1]);
+        const idOrFolio = dematMatch[2];
+        const nav = parseNum(dematMatch[3]);
+
+        let val = 0;
+        let invested = 0;
+        const schemeParts = [];
+
+        // Scan backwards for numbers and scheme name
+        for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
+          const prev = lines[j];
+          if (
+            prev.includes('Consolidated') ||
+            prev.includes('Page') ||
+            prev.includes('SoA') ||
+            prev.includes('NAV Date') ||
+            prev.includes('Total') ||
+            prev.includes('Allocation by')
+          ) {
+            break;
+          }
+          if (/^[\d,]+\.?\d*\s+[0-9\/\-]+\s+[\d,]+\.?\d*/.test(prev)) break;
+
+          const valM = prev.match(/^([\d,]+\.?\d*)\s+([\d,]+\.?\d*)\s*$/);
+          if (valM && val === 0) {
+            invested = parseNum(valM[1]);
+            val = parseNum(valM[2]);
+            continue;
+          }
+
+          if (/^\(?\+?[\d\.]+%?\)?$/.test(prev)) continue;
+
+          schemeParts.unshift(prev);
+        }
+
+        const rawScheme = schemeParts.join(' ').replace(/===.*?===/g, '').trim();
+
+        if (rawScheme && (units > 0 || val > 0)) {
+          const isReg = isRegularPlan(rawScheme);
+          const { bucket, category } = classifySchemeBucket(rawScheme);
+          const rta = detectRTA(rawScheme, idOrFolio);
+          const finalVal = val > 0 ? val : Math.round(units * nav * 100) / 100;
+          const finalInvested = invested > 0 ? invested : finalVal;
+          const pnl = Math.round((finalVal - finalInvested) * 100) / 100;
+          const pnlPct = finalInvested > 0 ? Math.round((pnl / finalInvested) * 1000) / 10 : 0;
+
+          folios.push({
+            id: `mf-${folios.length + 1}`,
+            folio_number: idOrFolio,
+            scheme_name: rawScheme,
+            isin: null,
+            units: units,
+            nav: nav,
+            current_value: finalVal,
+            invested_amount: finalInvested,
+            unrealized_pnl: pnl,
+            unrealized_pnl_pct: pnlPct,
+            is_regular_plan: isReg,
+            bucket,
+            category,
+            rta,
+            sip_active: false,
+            monthly_sip_amount: 0,
+            transaction_count: 1,
+            holding_mode: 'DEMAT_MFCENTRAL_CAS'
+          });
+        }
+      }
+    }
+  }
+
+  // Fallback 2: If standard Closing Unit Balance format not found, parse line by line
   if (folios.length === 0) {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     let currentFolio = null;

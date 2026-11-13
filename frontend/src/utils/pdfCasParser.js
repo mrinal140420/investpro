@@ -29,6 +29,7 @@ export async function decryptAndExtractPdfText(file, password) {
   if (panUpper) {
     passwordsToTry.push(panUpper.toLowerCase());
   }
+  passwordsToTry.push(''); // Handle unencrypted PDFs seamlessly
 
   let pdfDoc = null;
   let lastErr = null;
