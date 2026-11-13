@@ -203,61 +203,38 @@ export function parseMFCentralText(rawText) {
   }
 
   // Strategy 2: Parse Demat Holdings and Multi-Page Table Format (e.g. MFCentral CAS Summary reports)
-  // Handles layout where Demat holdings show:
+  // Handles layout where Demat & SoA holdings show:
   // Scheme Name (on 1-2 lines)
-  // Invested MarketValue Gain/Loss
-  // Units ClientId NAV
+  // Invested MarketValue Gain/Loss BalanceUnits ClientId/Folio NAV
+  // e.g. 0.00 200.44 0.00 (+0.00%)3.718012095500-52597280 0.0000
+  // or SoA: Scheme Name 0.00 0.00 0.00 (+0.00%)0.000 27-Sep-20261051226763 460.1296
   if (folios.length === 0) {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    let currentSchemeLines = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Match demat client ID or Folio lines e.g. "3.7180 12095500-52597280  0.0000" or "0.000  27-Sep-2026 1051226763  460.1296"
-      const dematMatch = line.match(/^([\d,]+\.?\d*)\s+([0-9\/\-]+)\s+([\d,]+\.?\d*)/);
-      if (dematMatch) {
-        const units = parseNum(dematMatch[1]);
-        const idOrFolio = dematMatch[2];
-        const nav = parseNum(dematMatch[3]);
+      // 1. Demat summary line: e.g. 0.00 200.44 0.00 (+0.00%)3.718012095500-52597280 0.0000
+      const mDemat = line.match(/^\s*([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+[\d,\.\-\+\(\)\%\s]+\s*?([\d,]+\.\d{3})[0-9]*?(\d{8,16}[\-\d]*)\s+([\d,]+\.\d{4})/);
+      
+      // 2. SoA summary line: e.g. Scheme ... 0.00 0.00 0.00 (+0.00%)0.000 27-Sep-20261051226763 460.1296
+      const mSoa = line.match(/^(.*?)\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+[\d,\.\-\+\(\)\%\s]+\s*?([\d,]+\.\d{3})\s+\d{2}-[A-Za-z]{3}-\d{4}\s*([0-9\/\-]+)\s+([\d,]+\.\d{4})/);
 
-        let val = 0;
-        let invested = 0;
-        const schemeParts = [];
+      if (mDemat) {
+        const invested = parseNum(mDemat[1]);
+        const marketVal = parseNum(mDemat[2]);
+        const units = parseNum(mDemat[3]);
+        const idOrFolio = mDemat[4];
+        const nav = parseNum(mDemat[5]);
+        const rawScheme = currentSchemeLines.join(' ').replace(/===.*?===/g, '').trim();
+        currentSchemeLines = [];
 
-        // Scan backwards for numbers and scheme name
-        for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
-          const prev = lines[j];
-          if (
-            prev.includes('Consolidated') ||
-            prev.includes('Page') ||
-            prev.includes('SoA') ||
-            prev.includes('NAV Date') ||
-            prev.includes('Total') ||
-            prev.includes('Allocation by')
-          ) {
-            break;
-          }
-          if (/^[\d,]+\.?\d*\s+[0-9\/\-]+\s+[\d,]+\.?\d*/.test(prev)) break;
-
-          const valM = prev.match(/^([\d,]+\.?\d*)\s+([\d,]+\.?\d*)\s*$/);
-          if (valM && val === 0) {
-            invested = parseNum(valM[1]);
-            val = parseNum(valM[2]);
-            continue;
-          }
-
-          if (/^\(?\+?[\d\.]+%?\)?$/.test(prev)) continue;
-
-          schemeParts.unshift(prev);
-        }
-
-        const rawScheme = schemeParts.join(' ').replace(/===.*?===/g, '').trim();
-
-        if (rawScheme && (units > 0 || val > 0)) {
+        if (rawScheme && (units > 0 || marketVal > 0)) {
           const isReg = isRegularPlan(rawScheme);
           const { bucket, category } = classifySchemeBucket(rawScheme);
           const rta = detectRTA(rawScheme, idOrFolio);
-          const finalVal = val > 0 ? val : Math.round(units * nav * 100) / 100;
+          const finalVal = marketVal > 0 ? marketVal : Math.round(units * nav * 100) / 100;
           const finalInvested = invested > 0 ? invested : finalVal;
           const pnl = Math.round((finalVal - finalInvested) * 100) / 100;
           const pnlPct = finalInvested > 0 ? Math.round((pnl / finalInvested) * 1000) / 10 : 0;
@@ -282,6 +259,63 @@ export function parseMFCentralText(rawText) {
             transaction_count: 1,
             holding_mode: 'DEMAT_MFCENTRAL_CAS'
           });
+        }
+      } else if (mSoa) {
+        const schemePrefix = mSoa[1].trim();
+        const invested = parseNum(mSoa[2]);
+        const marketVal = parseNum(mSoa[3]);
+        const units = parseNum(mSoa[4]);
+        const folioNo = mSoa[5];
+        const nav = parseNum(mSoa[6]);
+        if (schemePrefix) {
+          currentSchemeLines.push(schemePrefix);
+        }
+        const rawScheme = currentSchemeLines.join(' ').replace(/===.*?===/g, '').trim();
+        currentSchemeLines = [];
+
+        if (rawScheme && (units > 0 || marketVal > 0)) {
+          const isReg = isRegularPlan(rawScheme);
+          const { bucket, category } = classifySchemeBucket(rawScheme);
+          const rta = detectRTA(rawScheme, folioNo);
+          const finalVal = marketVal > 0 ? marketVal : Math.round(units * nav * 100) / 100;
+          const finalInvested = invested > 0 ? invested : finalVal;
+          const pnl = Math.round((finalVal - finalInvested) * 100) / 100;
+          const pnlPct = finalInvested > 0 ? Math.round((pnl / finalInvested) * 1000) / 10 : 0;
+
+          folios.push({
+            id: `mf-${folios.length + 1}`,
+            folio_number: folioNo,
+            scheme_name: rawScheme,
+            isin: null,
+            units: units,
+            nav: nav,
+            current_value: finalVal,
+            invested_amount: finalInvested,
+            unrealized_pnl: pnl,
+            unrealized_pnl_pct: pnlPct,
+            is_regular_plan: isReg,
+            bucket,
+            category,
+            rta,
+            sip_active: false,
+            monthly_sip_amount: 0,
+            transaction_count: 1,
+            holding_mode: 'SOA_MFCENTRAL_CAS'
+          });
+        }
+      } else {
+        // Collect candidate scheme lines while skipping known headers
+        const isHeader = [
+          'Consolidated', 'MFCentral', 'SoA Holdings', 'Demat Holdings', 
+          'Invested Value', 'Market Value', 'Gain/Loss', 'Balance', 
+          'Units NAV Date', 'Total', '#IDCW', '*SoA', 'Please note', 
+          'For any queries', 'Allocation by', 'PAN :', 'Page '
+        ].some(h => line.includes(h));
+
+        if (isHeader) {
+          currentSchemeLines = [];
+        } else {
+          currentSchemeLines.push(line);
         }
       }
     }
@@ -446,7 +480,34 @@ export function getSavedMFCentralSession() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_MFCENTRAL);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const session = JSON.parse(raw);
+    
+    // Auto-heal corrupted scheme names from previous regex matching
+    if (session && Array.isArray(session.holdings)) {
+      let modified = false;
+      session.holdings = session.holdings.map(h => {
+        let name = (h.scheme_name || '').trim();
+        if (
+          name.includes('CAMS and KFintech') || 
+          name.includes('initiative by') || 
+          name.includes('Mutual Funds in which you') ||
+          name.includes('transactions, balances')
+        ) {
+          modified = true;
+          if (h.isin === 'INF179K01WM1' || h.folio_number === '44783710' || h.folio_no === '44783710') {
+            name = 'HDFC Nifty 50 Index Fund - Direct Plan (formerly HDFC Index Fund - Nifty Plan)';
+          } else {
+            name = 'HDFC Nifty 50 Index Fund - Direct Plan';
+          }
+        }
+        return { ...h, scheme_name: name };
+      });
+
+      if (modified) {
+        localStorage.setItem(STORAGE_KEY_MFCENTRAL, JSON.stringify(session));
+      }
+    }
+    return session;
   } catch (err) {
     console.error('Failed to parse MFCentral session:', err);
     return null;
