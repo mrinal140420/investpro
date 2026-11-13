@@ -16,9 +16,10 @@ import AccountAggregatorModal from './components/AccountAggregatorModal';
 import MFCentralSyncModal from './components/MFCentralSyncModal';
 import CashflowEnvelopeCard from './components/CashflowEnvelopeCard';
 import SwpPlannerCard from './components/SwpPlannerCard';
+import PortfolioAuditDashboard from './components/PortfolioAuditDashboard';
 import { getSavedAASession } from './utils/accountAggregatorClient';
 import { getSavedMFCentralSession } from './utils/mfcentralParser';
-import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock, Wallet, TrendingDown } from 'lucide-react';
+import { Compass, PiggyBank, ShieldCheck, Award, TrendingUp, Sparkles, Zap, Lock, Wallet, TrendingDown, BarChart3 } from 'lucide-react';
 import { getEnrichedFundUniverse } from './utils/financialCalculations';
 import { apiFetchTrajectory, apiFetchFundUniverse, calculateTrajectoryAnalysis } from './utils/apiClient';
 
@@ -289,6 +290,21 @@ export default function App() {
           {/* Navigation Subsystem Tabs */}
           <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] w-fit shadow-md">
             <button
+              onClick={() => setActiveTab('portfolio_audit')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'portfolio_audit'
+                  ? 'btn-gold shadow-md'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)]'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 text-emerald-400" />
+              <span>Audit & Holdings (Dezerv Engine)</span>
+              {mfcentralSession?.holding_count > 0 && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveTab('barbell')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'barbell'
@@ -461,6 +477,19 @@ export default function App() {
           {/* Tab 7: SWP & Cashflow Machine */}
           {activeTab === 'swp_planner' && (
             <SwpPlannerCard userParams={params} />
+          )}
+
+          {/* Tab 8: Dezerv & PowerUp Portfolio Audit Dashboard */}
+          {activeTab === 'portfolio_audit' && (
+            <PortfolioAuditDashboard
+              session={mfcentralSession}
+              onUpdateSip={(newSip) => {
+                setParams(prev => ({
+                  ...prev,
+                  monthly_investable_sip: newSip
+                }));
+              }}
+            />
           )}
 
           {/* Official MFCentral RTA Live Sync Modal */}
