@@ -110,17 +110,37 @@ export function parseMFCentralText(rawText) {
 
     // Extract Scheme Name
     let schemeName = 'Indian Mutual Fund';
-    const schemeM = blockText.match(/(?:FOLIO NO:[^\n]+\n)?([A-Za-z0-9\s\-]+(?:Fund|Plan|Growth|Index|ETF)[A-Za-z0-9\s\-]*)\s*(?:\(Advisor|$)/i);
-    if (schemeM) {
-      schemeName = schemeM[1].replace(/FOLIO\s*NO:[^\n]+/i, '').replace(/===.*?===/g, '').trim();
-    } else {
-      // Fallback line-by-line scheme candidate
-      const lines = blockText.split('\n').map(l => l.trim());
+    
+    // Look specifically for the line immediately following 'FOLIO NO: ...'
+    const folioIndex = blockText.lastIndexOf('FOLIO NO:');
+    if (folioIndex !== -1) {
+      const sub = blockText.substring(folioIndex);
+      const lines = sub.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        schemeName = lines[1]
+          .replace(/\s*\(Advisor:.*$/i, '')
+          .replace(/\s*ISIN:.*$/i, '')
+          .replace(/FOLIO\s*NO:[^\n]+/i, '')
+          .trim();
+      }
+    }
+
+    if (!schemeName || schemeName === 'Indian Mutual Fund') {
+      const lines = blockText.split('\n').map(l => l.trim()).filter(Boolean);
       const cand = lines.find(l => 
-        (l.includes('Fund') || l.includes('Plan') || l.includes('Growth') || l.includes('Direct')) &&
-        !l.includes('Consolidated') && !l.includes('Statement') && l.length > 8
+        (l.includes('Fund') || l.includes('Plan') || l.includes('Growth') || l.includes('Index') || l.includes('ETF')) &&
+        !l.includes('Consolidated') && 
+        !l.includes('Statement') && 
+        !l.includes('initiative by') &&
+        !l.includes('transactions, balances') &&
+        !l.includes('Closing Unit Balance') &&
+        !l.includes('Mutual Fund folios') &&
+        !/^\d{2}[-\/]/.test(l) &&
+        l.length > 5
       );
-      if (cand) schemeName = cand.replace(/\s*-\s*ISIN:.*$/i, '').trim();
+      if (cand) {
+        schemeName = cand.replace(/\s*\(Advisor:.*$/i, '').replace(/\s*ISIN:.*$/i, '').replace(/FOLIO\s*NO:[^\n]+/i, '').trim();
+      }
     }
 
     // Extract Transactions in this block
